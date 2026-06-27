@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <title>ColorLab Pro</title>
-  <link rel="stylesheet" href="styles.css?v=9">
+  <link rel="stylesheet" href="styles.css?v=10">
 </head>
 <body>
 
@@ -24,44 +24,95 @@
       </div>
     </div>
     <div class="header-actions">
-      <button type="button" class="icon-btn" id="btn-undo" aria-label="撤销">
-        <svg viewBox="0 0 24 24"><path d="M9 14H4V9l5 5zm0-5a7 7 0 1 1 0 14 7 7 0 0 1 0-14z" fill="currentColor"/></svg>
+      <button type="button" class="hdr-btn" id="btn-undo" aria-label="撤销上一步">
+        <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" fill="currentColor" transform="rotate(90 12 12)"/><path d="M12 4c-4.42 0-8 3.58-8 8H2l3.5 3.5L9 12H7c0-2.76 2.24-5 5-5s5 2.24 5 5-2.24 5-5 5v2c3.87 0 7-3.13 7-7s-3.13-7-7-7z" fill="currentColor"/></svg>
+        <span>撤销</span>
       </button>
-      <button type="button" class="icon-btn" id="btn-redo" aria-label="重做">
-        <svg viewBox="0 0 24 24"><path d="M15 14h5V9l-5 5zm0-5a7 7 0 1 0 0 14 7 7 0 0 0 0-14z" fill="currentColor"/></svg>
+      <button type="button" class="hdr-btn" id="btn-redo" aria-label="重做">
+        <svg viewBox="0 0 24 24"><path d="M12 4c4.42 0 8 3.58 8 8h2l-3.5 3.5L13 12h2c0-2.76-2.24-5-5-5S5 9.24 5 12s2.24 5 5 5v-2c-3.87 0-7-3.13-7-7s3.13-7 7-7z" fill="currentColor"/></svg>
+        <span>重做</span>
       </button>
-      <button type="button" class="icon-btn accent" id="btn-compare" aria-label="对比原图">
-        <svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-6-6V4zm0 4v4l3 2" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+      <button type="button" class="hdr-btn accent" id="btn-compare" aria-label="对比原图">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="8" height="14" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="13" y="5" width="8" height="14" rx="1" stroke="currentColor" stroke-width="1.5" fill="currentColor" opacity="0.3"/></svg>
+        <span>对比</span>
       </button>
     </div>
   </header>
 
   <section class="viewport" id="viewport">
     <div class="viewport-grid"></div>
-    <canvas id="canvas"></canvas>
+    <div class="viewport-stack" id="viewport-stack">
+      <canvas id="canvas-original" class="hidden"></canvas>
+      <div class="canvas-clip" id="canvas-clip">
+        <canvas id="canvas"></canvas>
+      </div>
+      <div class="compare-handle hidden" id="compare-handle">
+        <div class="compare-line"></div>
+        <div class="compare-knob">◀ ▶</div>
+      </div>
+    </div>
+    <canvas id="histogram" class="histogram hidden" width="280" height="48"></canvas>
     <div class="viewport-empty" id="empty">
       <div class="empty-ring"></div>
       <p>导入照片 · GPU 实时调色</p>
-      <span>支持 RAW/JPEG · 60fps 预览</span>
+      <span>支持 JPEG/HEIC · 60fps 预览</span>
     </div>
-    <div class="compare-badge" id="compare-badge">ORIGINAL</div>
-    <canvas id="canvas-original" class="hidden"></canvas>
+    <div class="compare-badge" id="compare-badge">原图 ◀ ▶ 调色</div>
   </section>
 
   <nav class="tool-rail" id="tool-rail">
-    <button class="tool active" data-tool="light"><span>光效</span></button>
-    <button class="tool" data-tool="color"><span>色彩</span></button>
-    <button class="tool" data-tool="curve"><span>曲线</span></button>
-    <button class="tool" data-tool="hsl"><span>HSL</span></button>
-    <button class="tool" data-tool="split"><span>分离</span></button>
-    <button class="tool" data-tool="fx"><span>效果</span></button>
-    <button class="tool" data-tool="look"><span>风格</span></button>
-    <button class="tool ai-tool" data-tool="ai"><span>AI</span></button>
+    <button type="button" class="tool active" data-tool="quick"><span>快捷</span></button>
+    <button type="button" class="tool" data-tool="light"><span>光效</span></button>
+    <button type="button" class="tool" data-tool="color"><span>色彩</span></button>
+    <button type="button" class="tool" data-tool="curve"><span>曲线</span></button>
+    <button type="button" class="tool" data-tool="hsl"><span>HSL</span></button>
+    <button type="button" class="tool" data-tool="split"><span>分离</span></button>
+    <button type="button" class="tool" data-tool="fx"><span>效果</span></button>
+    <button type="button" class="tool" data-tool="look"><span>风格</span></button>
+    <button type="button" class="tool ai-tool" data-tool="ai"><span>AI</span></button>
   </nav>
 
   <section class="panel" id="panel">
+    <!-- Quick -->
+    <div class="tool-panel active" data-panel="quick">
+      <div class="quick-actions">
+        <button type="button" class="quick-btn primary" id="quick-auto">✦ 一键智能修图</button>
+        <button type="button" class="quick-btn" id="quick-levels">自动色阶</button>
+      </div>
+      <div class="quick-row">
+        <button type="button" class="quick-icon" id="btn-rotate-left" title="向左旋转">↺</button>
+        <button type="button" class="quick-icon" id="btn-rotate-right" title="向右旋转">↻</button>
+        <button type="button" class="quick-icon" id="btn-histogram" title="直方图">📊</button>
+        <button type="button" class="quick-icon" id="btn-flip-h" title="水平翻转">⇋</button>
+      </div>
+      <div class="param" data-key="exposure" data-min="-2" data-max="2" data-step="0.01">
+        <label>曝光</label><output>0.00</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="contrast" data-min="-100" data-max="100" data-step="1">
+        <label>对比度</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="saturation" data-min="-100" data-max="100" data-step="1">
+        <label>饱和度</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="temperature" data-min="-100" data-max="100" data-step="1">
+        <label>色温</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="highlights" data-min="-100" data-max="100" data-step="1">
+        <label>高光</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="shadows" data-min="-100" data-max="100" data-step="1">
+        <label>阴影</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+    </div>
+
     <!-- Light -->
-    <div class="tool-panel active" data-panel="light">
+    <div class="tool-panel" data-panel="light">
       <div class="param" data-key="exposure" data-min="-2" data-max="2" data-step="0.01" data-scale="1">
         <label>曝光</label><output>0.00</output>
         <input type="range" class="param-slider">
@@ -166,6 +217,14 @@
         <label>清晰度</label><output>0</output>
         <input type="range" class="param-slider">
       </div>
+      <div class="param" data-key="sharpening" data-min="0" data-max="100" data-step="1">
+        <label>锐化</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="dehaze" data-min="0" data-max="100" data-step="1">
+        <label>去雾</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
       <div class="param" data-key="vignette" data-min="0" data-max="100" data-step="1">
         <label>暗角</label><output>0</output>
         <input type="range" class="param-slider">
@@ -233,11 +292,11 @@
   <div class="overlay-card"><div class="spinner"></div><p>正在导出全分辨率…</p></div>
 </div>
 
-<script src="image-loader.js?v=9"></script>
-<script src="gl-engine.js?v=9"></script>
-<script src="presets.js?v=9"></script>
-<script src="vision-agent.js?v=9"></script>
-<script src="ai-grade.js?v=9"></script>
-<script src="app.js?v=9"></script>
+<script src="image-loader.js?v=10"></script>
+<script src="gl-engine.js?v=10"></script>
+<script src="presets.js?v=10"></script>
+<script src="vision-agent.js?v=10"></script>
+<script src="ai-grade.js?v=10"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>

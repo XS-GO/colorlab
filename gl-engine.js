@@ -32,7 +32,7 @@ class GLEngine {
     return {
       exposure: 0, contrast: 0, highlights: 0, shadows: 0, whites: 0, blacks: 0,
       temperature: 0, tint: 0, vibrance: 0, saturation: 0,
-      clarity: 0, sharpening: 0, vignette: 0, grain: 0,
+      clarity: 0, sharpening: 0, dehaze: 0, vignette: 0, grain: 0,
       splitShadowHue: 220, splitShadowSat: 0,
       splitHighlightHue: 40, splitHighlightSat: 0,
       splitBalance: 0,
@@ -176,6 +176,8 @@ class GLEngine {
     gl.uniform1f(U.u_vibrance, p.vibrance / 100);
     gl.uniform1f(U.u_saturation, p.saturation / 100);
     gl.uniform1f(U.u_clarity, p.clarity / 100);
+    gl.uniform1f(U.u_sharpening, p.sharpening / 100);
+    gl.uniform1f(U.u_dehaze, p.dehaze / 100);
     gl.uniform1f(U.u_vignette, p.vignette / 100);
     gl.uniform1f(U.u_grain, p.grain / 100);
     gl.uniform1f(U.u_grainSeed, Math.random());
@@ -296,7 +298,7 @@ class GLEngine {
       'u_image','u_curveMaster','u_curveRGB','u_resolution',
       'u_exposure','u_contrast','u_highlights','u_shadows','u_whites','u_blacks',
       'u_temperature','u_tint','u_vibrance','u_saturation',
-      'u_clarity','u_vignette','u_grain','u_grainSeed',
+      'u_clarity','u_sharpening','u_dehaze','u_vignette','u_grain','u_grainSeed',
       'u_splitShadowHue','u_splitShadowSat','u_splitHighlightHue','u_splitHighlightSat','u_splitBalance',
       'u_curveChannel','u_hsl',
     ];
@@ -324,7 +326,7 @@ uniform sampler2D u_curveRGB;
 uniform vec2 u_resolution;
 uniform float u_exposure, u_contrast, u_highlights, u_shadows;
 uniform float u_whites, u_blacks, u_temperature, u_tint;
-uniform float u_vibrance, u_saturation, u_clarity, u_vignette, u_grain, u_grainSeed;
+uniform float u_vibrance, u_saturation, u_clarity, u_sharpening, u_dehaze, u_vignette, u_grain, u_grainSeed;
 uniform float u_splitShadowHue, u_splitShadowSat, u_splitHighlightHue, u_splitHighlightSat, u_splitBalance;
 uniform int u_curveChannel;
 uniform vec3 u_hsl[8];
@@ -483,6 +485,15 @@ void main(){
   // Clarity (midtone local contrast)
   float mid = abs(lumSrgb - 0.5) * 2.0;
   c = mix(c, c * (1.0 + u_clarity * (1.0 - mid) * 0.6), u_clarity);
+
+  // Dehaze (shadow lift + contrast)
+  float hazed = 1.0 - smoothstep(0.15, 0.75, lumSrgb);
+  c = mix(c, c * (1.0 + u_dehaze * 0.35) + u_dehaze * 0.04, hazed);
+  c = (c - 0.5) * (1.0 + u_dehaze * 0.25) + 0.5;
+
+  // Sharpening (local contrast on edges)
+  float gray2 = dot(c, vec3(0.299, 0.587, 0.114));
+  c += (c - vec3(gray2)) * u_sharpening * 1.2 * (1.0 - mid * 0.5);
 
   // Vignette
   vec2 uv = v_uv - 0.5;

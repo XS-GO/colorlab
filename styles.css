@@ -27,7 +27,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 16px; padding-top: max(10px, var(--safe-t));
   background: linear-gradient(180deg, var(--bg2) 0%, transparent 100%);
-  z-index: 10;
+  z-index: 30; position: relative; flex-shrink: 0;
 }
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand-mark {
@@ -46,7 +46,21 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   font-size: 9px; font-weight: 700; color: var(--accent);
   letter-spacing: 1.5px; padding: 2px 5px; border: 1px solid var(--border); border-radius: 4px;
 }
-.header-actions { display: flex; gap: 6px; position: relative; z-index: 20; }
+.header-actions { display: flex; gap: 4px; position: relative; z-index: 30; flex-shrink: 0; }
+.hdr-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 48px; height: 44px; padding: 4px 6px; gap: 2px;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--glass); color: var(--muted);
+  backdrop-filter: blur(12px); cursor: pointer; transition: all 0.15s;
+  touch-action: manipulation; -webkit-touch-callout: none;
+  pointer-events: auto;
+}
+.hdr-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.hdr-btn span { font-size: 9px; font-weight: 700; letter-spacing: 0.3px; line-height: 1; }
+.hdr-btn:active, .hdr-btn.is-on { transform: scale(0.96); color: var(--text); border-color: var(--accent); background: rgba(0,212,255,0.1); }
+.hdr-btn.accent { color: var(--accent); }
+.hdr-btn:disabled { opacity: 0.35; pointer-events: none; }
 .icon-btn {
   width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 10px;
   background: var(--glass); color: var(--muted); display: grid; place-items: center;
@@ -71,8 +85,49 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   background-size: 24px 24px;
   pointer-events: none;
 }
-#canvas { max-width: 100%; max-height: 100%; display: none; }
-#canvas-original { position: absolute; inset: 0; max-width: 100%; max-height: 100%; margin: auto; }
+.viewport-stack {
+  position: relative; width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
+.canvas-clip {
+  position: absolute; inset: 0; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  clip-path: inset(0 0 0 50%);
+}
+#canvas, #canvas-original {
+  max-width: 100%; max-height: 100%; display: block;
+  object-fit: contain;
+}
+#canvas-original {
+  position: relative; z-index: 1;
+}
+.canvas-clip #canvas { position: relative; z-index: 2; }
+.compare-handle {
+  position: absolute; top: 0; bottom: 0; left: 50%;
+  width: 44px; margin-left: -22px; z-index: 20;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: none; cursor: ew-resize;
+}
+.compare-line {
+  position: absolute; top: 0; bottom: 0; left: 50%; width: 2px;
+  margin-left: -1px; background: var(--accent);
+  box-shadow: 0 0 12px var(--glow);
+}
+.compare-knob {
+  position: relative; z-index: 1;
+  font-size: 8px; letter-spacing: -1px; color: #fff; font-weight: 700;
+  padding: 8px 4px; border-radius: 12px;
+  background: rgba(0,212,255,0.85); border: 1px solid #fff;
+  box-shadow: 0 2px 12px var(--glow);
+}
+.histogram {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  width: min(280px, 90%); height: 48px; z-index: 15;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+#canvas { display: none; }
 .hidden { display: none !important; }
 
 .viewport-empty {
@@ -90,11 +145,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .viewport-empty span { font-size: 11px; font-family: 'SF Mono', monospace; opacity: 0.6; }
 
 .compare-badge {
-  position: absolute; top: 12px; left: 12px;
-  font-size: 10px; font-weight: 700; letter-spacing: 2px;
-  padding: 4px 10px; border-radius: 4px;
-  background: rgba(0,212,255,0.15); border: 1px solid var(--accent);
-  color: var(--accent); display: none;
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  padding: 4px 12px; border-radius: 20px;
+  background: rgba(0,0,0,0.6); border: 1px solid var(--accent);
+  color: var(--accent); display: none; z-index: 25;
 }
 
 /* Tool rail */
@@ -118,7 +173,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
 /* Panel */
 .panel {
-  max-height: 220px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  max-height: 260px; overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: 8px 16px 12px;
   background: linear-gradient(180deg, var(--bg2), var(--bg));
   border-top: 1px solid rgba(255,255,255,0.03);
@@ -149,6 +204,30 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   box-shadow: 0 0 10px var(--glow); cursor: pointer;
 }
 .param-slider:active::-webkit-slider-thumb { transform: scale(1.15); }
+.param label { cursor: default; }
+.param output { cursor: default; }
+
+/* Quick panel */
+.quick-actions { display: flex; gap: 8px; margin-bottom: 10px; }
+.quick-btn {
+  flex: 1; padding: 10px 8px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--glass); color: var(--text); font-size: 12px; font-weight: 700;
+  cursor: pointer;
+}
+.quick-btn.primary {
+  flex: 2; border-color: rgba(167,139,250,0.5);
+  background: linear-gradient(135deg, rgba(99,102,241,0.35), rgba(167,139,250,0.25));
+  color: #e8e0ff;
+}
+.quick-btn:active { transform: scale(0.98); }
+.quick-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.quick-icon {
+  flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border);
+  background: rgba(0,0,0,0.25); color: var(--text); font-size: 16px;
+  cursor: pointer;
+}
+.quick-icon.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.08); }
+.quick-icon:active { transform: scale(0.95); }
 
 /* Curve */
 .curve-tabs { display: flex; gap: 6px; margin-bottom: 8px; }

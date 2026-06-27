@@ -12,6 +12,12 @@
 
   const $canvas = document.getElementById('canvas');
   const $canvasOrig = document.getElementById('canvas-original');
+  const $canvasClip = document.getElementById('canvas-clip');
+  const $compareHandle = document.getElementById('compare-handle');
+  const $histogram = document.getElementById('histogram');
+  const $btnUndo = document.getElementById('btn-undo');
+  const $btnRedo = document.getElementById('btn-redo');
+  const $btnCompare = document.getElementById('btn-compare');
   const $empty = document.getElementById('empty');
   const $compareBadge = document.getElementById('compare-badge');
   const $toast = document.getElementById('toast');
@@ -25,8 +31,12 @@
   let engine, hasImage = false, currentPreset = null, presetStrength = 1;
   let hslChannel = 'red', curveChannel = 'master';
   let rafId = null;
-  const undoStack = [], redoStack = [];
+  const histPast = [], histFuture = [];
   const MAX_HIST = 40;
+  let sourceImg = null, userRotation = 0, flipH = false;
+  let compareMode = false, compareSplit = 50;
+  let showHistogram = false;
+  let histDrag = false, compareDrag = false;
 
   /* ── Init ── */
   try {
@@ -37,7 +47,7 @@
   }
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js?v=9').then(reg => reg.update()).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=10').then(reg => reg.update()).catch(() => {});
   }
 
   function setOverlay(open) {
@@ -81,9 +91,31 @@
   }
 
   function pushHistory() {
-    undoStack.push(snapshot());
-    if (undoStack.length > MAX_HIST) undoStack.shift();
-    redoStack.length = 0;
+    histPast.push(snapshot());
+    if (histPast.length > MAX_HIST) histPast.shift();
+    histFuture.length = 0;
+    updateHeaderState();
+  }
+
+  function beginEdit() {
+    if (!histDrag) {
+      histPast.push(snapshot());
+      if (histPast.length > MAX_HIST) histPast.shift();
+      histFuture.length = 0;
+      histDrag = true;
+      updateHeaderState();
+    }
+  }
+
+  function endEdit() {
+    histDrag = false;
+    updateHeaderState();
+  }
+
+  function updateHeaderState() {
+    if ($btnUndo) $btnUndo.disabled = !hasImage || histPast.length === 0;
+    if ($btnRedo) $btnRedo.disabled = !hasImage || histFuture.length === 0;
+    if ($btnCompare) $btnCompare.classList.toggle('is-on', compareMode);
   }
 
   function restore(json) {
@@ -104,17 +136,21 @@
 
   function undo() {
     if (!hasImage) { toast('请先导入照片'); return; }
-    if (!undoStack.length) { toast('无可撤销'); return; }
-    redoStack.push(snapshot());
-    restore(undoStack.pop());
+    if (!histPast.length) { toast('没有可撤销的操作'); return; }
+    histFuture.unshift(snapshot());
+    restore(histPast.pop());
+    updateHeaderState();
+    drawHistogram();
     toast('已撤销');
   }
 
   function redo() {
     if (!hasImage) { toast('请先导入照片'); return; }
-    if (!redoStack.length) { toast('无可重做'); return; }
-    undoStack.push(snapshot());
-    restore(redoStack.pop());
+    if (!histFuture.length) { toast('没有可重做'); return; }
+    histPast.push(snapshot());
+    restore(histFuture.shift());
+    updateHeaderState();
+    drawHistogram();
     toast('已重做');
   }
 
@@ -147,7 +183,16 @@
       };
 
       slider.addEventListener('input', apply);
-      slider.addEventListener('pointerdown', () => { pushHistory(); });
+      slider.addEventListener('pointerdown', beginEdit);
+      slider.addEventListener('pointerup', endEdit);
+      slider.addEventListener('pointercancel', endEdit);
+      slider.addEventListener('dblclick', () => {
+        const def = key === 'exposure' ? 0 :
+          (key === 'splitShadowHue' ? 220 : key === 'splitHighlightHue' ? 40 : 0);
+        slider.value = def;
+        apply();
+        toast('已重置 ' + el.querySelector('label').textContent);
+      });
     });
   }
 
@@ -177,6 +222,76 @@
     });
   });
 
+  /* ── Image source / transform ── */
+  function renderSourceToCanvas(img) {
+    const rot = userRotation % 360;
+    const swap = rot === 90 || rot === 270;
+    const cw = swap ? img.height : img.width;
+    const ch = swap ? img.width : img.height;
+    const c = document.createElement('canvas');
+    c.width = cw; c.height = ch;
+    const ctx = c.getContext('2d');
+    ctx.translate(cw / 2, ch / 2);
+    ctx.rotate(rot * Math.PI / 180);
+    ctx.scale(flipH ? -1 : 1, 1);
+    ctx.drawImage(img, -img.width / 2, -img.height / 2);
+    return c;
+  }
+
+  async function applySourceImage() {
+    if (!sourceImg) return;
+    const savedParams = JSON.parse(JSON.stringify(engine.params));
+    const savedCurves = {
+      master: Array.from(engine.curveMaster || []),
+      R: Array.from(engine.curveR || []),
+      G: Array.from(engine.curveG || []),
+      B: Array.from(engine.curveB || []),
+    };
+    const canvas = renderSourceToCanvas(sourceImg);
+    const img = await new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = rej;
+      i.src = canvas.toDataURL('image/jpeg', 0.92);
+    });
+    engine.loadImage(img);
+    engine.params = savedParams;
+    if (savedCurves.master.length === 256) {
+      engine.curveMaster = new Uint8Array(savedCurves.master);
+      engine.curveR = new Uint8Array(savedCurves.R);
+      engine.curveG = new Uint8Array(savedCurves.G);
+      engine.curveB = new Uint8Array(savedCurves.B);
+      engine._curveDirty = true;
+    }
+    $canvasOrig.width = engine.previewW;
+    $canvasOrig.height = engine.previewH;
+    $canvasOrig.getContext('2d').drawImage(img, 0, 0, engine.previewW, engine.previewH);
+    $canvas.style.display = 'block';
+    syncCanvasLayout();
+    scheduleRender();
+    drawHistogram();
+  }
+
+  function syncCanvasLayout() {
+    if (!$canvas.width) return;
+    const ratio = $canvas.width / $canvas.height;
+    const vp = document.getElementById('viewport');
+    const vw = vp.clientWidth, vh = vp.clientHeight;
+    let dw = vw, dh = dw / ratio;
+    if (dh > vh) { dh = vh; dw = dh * ratio; }
+    [$canvas, $canvasOrig].forEach(c => {
+      c.style.width = dw + 'px';
+      c.style.height = dh + 'px';
+    });
+    updateCompareSplit(compareSplit);
+  }
+
+  function updateCompareSplit(pct) {
+    compareSplit = Math.max(8, Math.min(92, pct));
+    if ($canvasClip) $canvasClip.style.clipPath = `inset(0 0 0 ${compareSplit}%)`;
+    if ($compareHandle) $compareHandle.style.left = compareSplit + '%';
+  }
+
   /* ── Import ── */
   document.getElementById('file-input').addEventListener('change', async e => {
     const file = e.target.files[0];
@@ -184,25 +299,24 @@
     e.target.value = '';
     try {
       toast('正在加载…');
-      const img = await loadOrientedImage(file);
-      engine.loadImage(img);
+      sourceImg = await loadOrientedImage(file);
+      userRotation = 0;
+      flipH = false;
+      await applySourceImage();
       engine.resetParams();
       currentPreset = null;
-      $canvas.style.display = 'block';
       $empty.style.display = 'none';
 
-      $canvasOrig.width = engine.previewW;
-      $canvasOrig.height = engine.previewH;
-      $canvasOrig.getContext('2d').drawImage(img, 0, 0, engine.previewW, engine.previewH);
-
       hasImage = true;
-      undoStack.length = 0;
-      redoStack.length = 0;
-      pushHistory(); // 保存初始状态，撤销可回到原图
+      histPast.length = 0;
+      histFuture.length = 0;
+      compareMode = false;
+      setCompareUI(false);
       initCurvePoints();
       syncAllSliders();
+      updateHeaderState();
       scheduleRender();
-      toast('已加载 · GPU 就绪');
+      toast('已加载 · 点「对比」看原图/调色');
     } catch (err) {
       toast('图片加载失败');
       console.error(err);
@@ -211,57 +325,76 @@
 
   document.getElementById('btn-import').onclick = () => document.getElementById('file-input').click();
 
-  /* ── Compare ── */
-  let compareTimer;
-  let compareMode = false;
+  /* ── Compare (split view) ── */
   const viewport = document.getElementById('viewport');
 
-  function showOriginal(show) {
-    compareMode = show;
-    $canvas.style.visibility = show ? 'hidden' : 'visible';
-    $canvasOrig.classList.toggle('hidden', !show);
-    $compareBadge.style.display = show ? 'block' : 'none';
+  function setCompareUI(on) {
+    compareMode = on;
+    $canvasOrig.classList.toggle('hidden', !on);
+    $compareHandle.classList.toggle('hidden', !on);
+    $compareBadge.style.display = on ? 'block' : 'none';
+    if (on) {
+      updateCompareSplit(compareSplit);
+      syncCanvasLayout();
+    } else if ($canvasClip) {
+      $canvasClip.style.clipPath = 'inset(0 0 0 0)';
+    }
+    updateHeaderState();
   }
-
-  function startCompare() { if (hasImage) showOriginal(true); }
-  function stopCompare() { showOriginal(false); }
 
   function toggleCompare() {
     if (!hasImage) { toast('请先导入照片'); return; }
-    showOriginal(!compareMode);
-    toast(compareMode ? '显示原图' : '显示调色后');
+    setCompareUI(!compareMode);
+    toast(compareMode ? '左右对比：左原图 · 右调色（拖动中线）' : '已关闭对比');
   }
 
-  viewport.addEventListener('touchstart', (e) => {
-    if (e.target.closest('.header-actions')) return;
-    compareTimer = setTimeout(startCompare, 120);
-  }, { passive: true });
-  viewport.addEventListener('touchend', () => { clearTimeout(compareTimer); stopCompare(); });
-  viewport.addEventListener('touchcancel', () => { clearTimeout(compareTimer); stopCompare(); });
-  viewport.addEventListener('mousedown', (e) => {
-    if (e.target.closest('.header-actions')) return;
-    compareTimer = setTimeout(startCompare, 120);
-  });
-  viewport.addEventListener('mouseup', () => { clearTimeout(compareTimer); stopCompare(); });
-  viewport.addEventListener('mouseleave', () => { clearTimeout(compareTimer); stopCompare(); });
+  function onCompareDrag(clientX) {
+    const stack = document.getElementById('viewport-stack');
+    if (!stack) return;
+    const rect = stack.getBoundingClientRect();
+    const pct = ((clientX - rect.left) / rect.width) * 100;
+    updateCompareSplit(pct);
+  }
 
-  function bindHeaderBtn(id, handler) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    let lastTap = 0;
-    el.addEventListener('click', e => {
+  if ($compareHandle) {
+    $compareHandle.addEventListener('pointerdown', e => {
       e.preventDefault();
       e.stopPropagation();
-      const now = Date.now();
-      if (now - lastTap < 350) return;
-      lastTap = now;
+      compareDrag = true;
+      $compareHandle.setPointerCapture(e.pointerId);
+    });
+    $compareHandle.addEventListener('pointermove', e => {
+      if (!compareDrag) return;
+      e.preventDefault();
+      onCompareDrag(e.clientX);
+    });
+    $compareHandle.addEventListener('pointerup', e => {
+      compareDrag = false;
+      try { $compareHandle.releasePointerCapture(e.pointerId); } catch (_) {}
+    });
+  }
+
+  viewport.addEventListener('pointerdown', e => {
+    if (!compareMode || compareDrag) return;
+    if (e.target.closest('.compare-handle, .header-actions, .histogram')) return;
+    onCompareDrag(e.clientX);
+  });
+
+  function bindHeaderBtn(el, handler) {
+    if (!el) return;
+    el.addEventListener('pointerup', e => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
       handler(e);
     });
   }
 
-  bindHeaderBtn('btn-undo', undo);
-  bindHeaderBtn('btn-redo', redo);
-  bindHeaderBtn('btn-compare', toggleCompare);
+  bindHeaderBtn($btnUndo, undo);
+  bindHeaderBtn($btnRedo, redo);
+  bindHeaderBtn($btnCompare, toggleCompare);
+
+  window.addEventListener('resize', () => { if (hasImage) syncCanvasLayout(); });
 
   /* ── Reset ── */
   document.getElementById('btn-reset').onclick = () => {
@@ -404,6 +537,7 @@
 
   function onCurveDown(e) {
     e.preventDefault();
+    beginEdit();
     const { x, y, w, h } = canvasPos(e);
     dragIdx = -1;
     let best = 20;
@@ -432,7 +566,7 @@
   }
 
   function onCurveUp() {
-    if (dragIdx >= 0) pushHistory();
+    if (dragIdx >= 0) endEdit();
     dragIdx = -1;
   }
 
@@ -489,7 +623,9 @@
         if (currentPreset) { currentPreset = null; updateLookSelection(); }
         scheduleRender();
       });
-      slider.addEventListener('pointerup', () => pushHistory());
+      slider.addEventListener('pointerdown', beginEdit);
+      slider.addEventListener('pointerup', endEdit);
+      slider.addEventListener('pointercancel', endEdit);
     });
   }
 
@@ -544,7 +680,8 @@
         scheduleRender();
       }
     });
-    strSlider.addEventListener('pointerup', () => pushHistory());
+    strSlider.addEventListener('pointerdown', beginEdit);
+    strSlider.addEventListener('pointerup', endEdit);
   }
 
   function renderLooks(cat) {
@@ -603,6 +740,99 @@
     }
   }
 
+  /* ── Histogram ── */
+  function drawHistogram() {
+    if (!$histogram || !showHistogram || !$canvasOrig.width) return;
+    const ctx = $histogram.getContext('2d');
+    const w = $histogram.width, h = $histogram.height;
+    ctx.clearRect(0, 0, w, h);
+    const sw = Math.min($canvasOrig.width, 200);
+    const sh = Math.min($canvasOrig.height, 200);
+    const tmp = document.createElement('canvas');
+    tmp.width = sw; tmp.height = sh;
+    tmp.getContext('2d').drawImage($canvasOrig, 0, 0, sw, sh);
+    const { data } = tmp.getContext('2d').getImageData(0, 0, sw, sh);
+    const r = new Uint32Array(256), g = new Uint32Array(256), b = new Uint32Array(256), lum = new Uint32Array(256);
+    for (let i = 0; i < data.length; i += 4) {
+      r[data[i]]++; g[data[i + 1]]++; b[data[i + 2]]++;
+      const l = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+      lum[l]++;
+    }
+    const max = Math.max(...lum, 1);
+    const draw = (arr, color, alpha) => {
+      ctx.fillStyle = color;
+      ctx.globalAlpha = alpha;
+      for (let i = 0; i < 256; i++) {
+        const bh = (arr[i] / max) * (h - 4);
+        ctx.fillRect(i / 256 * w, h - bh, w / 256 + 0.5, bh);
+      }
+    };
+    draw(r, '#ff4444', 0.45);
+    draw(g, '#44ff44', 0.45);
+    draw(b, '#4488ff', 0.45);
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = '#ccc';
+    for (let i = 0; i < 256; i++) {
+      const bh = (lum[i] / max) * (h - 4);
+      ctx.fillRect(i / 256 * w, h - bh, w / 256 + 0.5, bh);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* ── Quick tools ── */
+  function initQuickTools() {
+    document.getElementById('quick-auto')?.addEventListener('click', () => runAI(true));
+    document.getElementById('quick-levels')?.addEventListener('click', () => {
+      if (!hasImage) { toast('请先导入照片'); return; }
+      if (!window.VisionAgent) { toast('分析模块未加载'); return; }
+      beginEdit();
+      const rep = VisionAgent.analyzeCanvas($canvasOrig);
+      const p = engine.params;
+      if (rep.isDark) p.exposure += 0.3;
+      if (rep.isBright) p.exposure -= 0.15;
+      if (rep.clipHigh > 0.02) p.highlights -= Math.min(35, rep.clipHigh * 300);
+      if (rep.clipLow > 0.03 || rep.isDark) p.shadows += 20;
+      if (rep.isFlat) { p.contrast += 10; p.clarity += 8; }
+      if (rep.colorCast === 'warm') p.temperature -= 10;
+      if (rep.colorCast === 'cool') p.temperature += 10;
+      syncAllSliders();
+      endEdit();
+      scheduleRender();
+      drawHistogram();
+      toast('已自动色阶');
+    });
+
+    document.getElementById('btn-rotate-left')?.addEventListener('click', async () => {
+      if (!hasImage) return;
+      pushHistory();
+      userRotation = (userRotation - 90 + 360) % 360;
+      await applySourceImage();
+      toast('已旋转');
+    });
+    document.getElementById('btn-rotate-right')?.addEventListener('click', async () => {
+      if (!hasImage) return;
+      pushHistory();
+      userRotation = (userRotation + 90) % 360;
+      await applySourceImage();
+      toast('已旋转');
+    });
+    document.getElementById('btn-flip-h')?.addEventListener('click', async () => {
+      if (!hasImage) return;
+      pushHistory();
+      flipH = !flipH;
+      await applySourceImage();
+      toast(flipH ? '已水平翻转' : '已取消翻转');
+    });
+    document.getElementById('btn-histogram')?.addEventListener('click', () => {
+      if (!hasImage) { toast('请先导入照片'); return; }
+      showHistogram = !showHistogram;
+      $histogram.classList.toggle('hidden', !showHistogram);
+      document.getElementById('btn-histogram')?.classList.toggle('active', showHistogram);
+      if (showHistogram) drawHistogram();
+      toast(showHistogram ? '直方图已显示' : '直方图已隐藏');
+    });
+  }
+
   /* ── AI Grading ── */
   const AI_USE_CLOUD_KEY = 'colorlab_use_cloud';
 
@@ -656,7 +886,9 @@
         $presetStrength.classList.add('hidden');
       }
 
+      updateHeaderState();
       scheduleRender();
+      drawHistogram();
       if ($result) {
         const tag = aiResult.source === 'cloud' ? ' · 云端AI' :
           aiResult.source === 'agent' ? ' · 智能Agent' : ' · 本地';
@@ -736,7 +968,9 @@
     buildHSLPanel();
     buildPresets();
     initCurvePoints();
+    initQuickTools();
     initAI();
+    updateHeaderState();
   } catch (err) {
     console.error('[ColorLab boot error]', err);
     toast('加载失败: ' + err.message);
