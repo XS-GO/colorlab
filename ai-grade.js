@@ -226,7 +226,12 @@ preset 可选值：${Object.keys(window.PRESETS || {}).join(',')} 或 null
   }
 
   async function analyze(prompt, canvas, options = {}) {
-    const stats = analyzeImageStats(canvas);
+    if (!window.VisionAgent) {
+      const stats = analyzeImageStats(canvas);
+      return analyzeLocal(prompt, stats);
+    }
+
+    const report = VisionAgent.analyzeCanvas(canvas);
     const apiKey = options.apiKey || localStorage.getItem(STORAGE_KEY);
     const baseUrl = options.baseUrl || localStorage.getItem(BASE_URL_KEY);
     const useAPI = options.useAPI === true && !!apiKey;
@@ -234,18 +239,21 @@ preset 可选值：${Object.keys(window.PRESETS || {}).join(',')} 或 null
     if (useAPI) {
       try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 12000);
+        const timer = setTimeout(() => controller.abort(), 15000);
         const result = await analyzeWithAPI(prompt, canvas, apiKey, baseUrl, controller.signal);
         clearTimeout(timer);
+        result.source = 'cloud';
         return result;
       } catch (e) {
-        console.warn('AI API failed, fallback local', e);
-        const local = analyzeLocal(prompt, stats);
-        local.explanation = '云端不可用，已本地分析 · ' + local.explanation;
-        return local;
+        console.warn('Cloud AI failed, use vision agent', e);
       }
     }
-    return analyzeLocal(prompt, stats);
+
+    // Vision Agent（本地智能分析，默认）
+    if (options.auto || !prompt || /自动|优化|一键|智能|修/.test(prompt)) {
+      return VisionAgent.autoEnhance(canvas);
+    }
+    return VisionAgent.plan(prompt, report);
   }
 
   function applyToEngine(engine, result, helpers = {}) {

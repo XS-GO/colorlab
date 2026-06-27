@@ -46,11 +46,12 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   font-size: 9px; font-weight: 700; color: var(--accent);
   letter-spacing: 1.5px; padding: 2px 5px; border: 1px solid var(--border); border-radius: 4px;
 }
-.header-actions { display: flex; gap: 6px; }
+.header-actions { display: flex; gap: 6px; position: relative; z-index: 20; }
 .icon-btn {
   width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 10px;
   background: var(--glass); color: var(--muted); display: grid; place-items: center;
   backdrop-filter: blur(12px); cursor: pointer; transition: all 0.15s;
+  touch-action: manipulation; -webkit-touch-callout: none;
 }
 .icon-btn svg { width: 18px; height: 18px; }
 .icon-btn:active { transform: scale(0.94); color: var(--text); border-color: var(--accent); }
@@ -260,6 +261,14 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   background: transparent; color: var(--muted); font-size: 11px; cursor: pointer;
 }
 .ai-chip:active { color: #a78bfa; border-color: #a78bfa; }
+.ai-auto {
+  width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid rgba(167,139,250,0.45);
+  border-radius: 10px; background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(167,139,250,0.2));
+  color: #e8e0ff; font-size: 14px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 20px rgba(99,102,241,0.25);
+}
+.ai-auto:active { transform: scale(0.98); }
+.ai-auto:disabled { opacity: 0.5; pointer-events: none; }
 .ai-apply {
   width: 100%; padding: 11px; border: none; border-radius: 10px;
   background: linear-gradient(135deg, #6366f1, #a78bfa);

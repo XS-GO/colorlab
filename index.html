@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <title>ColorLab Pro</title>
-  <link rel="stylesheet" href="styles.css?v=8">
+  <link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body>
 
@@ -24,13 +24,13 @@
       </div>
     </div>
     <div class="header-actions">
-      <button class="icon-btn" id="btn-undo" aria-label="撤销">
+      <button type="button" class="icon-btn" id="btn-undo" aria-label="撤销">
         <svg viewBox="0 0 24 24"><path d="M9 14H4V9l5 5zm0-5a7 7 0 1 1 0 14 7 7 0 0 1 0-14z" fill="currentColor"/></svg>
       </button>
-      <button class="icon-btn" id="btn-redo" aria-label="重做">
+      <button type="button" class="icon-btn" id="btn-redo" aria-label="重做">
         <svg viewBox="0 0 24 24"><path d="M15 14h5V9l-5 5zm0-5a7 7 0 1 0 0 14 7 7 0 0 0 0-14z" fill="currentColor"/></svg>
       </button>
-      <button class="icon-btn accent" id="btn-compare" aria-label="对比原图">
+      <button type="button" class="icon-btn accent" id="btn-compare" aria-label="对比原图">
         <svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-6-6V4zm0 4v4l3 2" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
       </button>
     </div>
@@ -188,7 +188,8 @@
 
     <!-- AI -->
     <div class="tool-panel" data-panel="ai">
-      <p class="panel-hint">描述你想要的效果，AI 自动分析并调整参数</p>
+      <p class="panel-hint">本地 Vision Agent 分析画面，一键智能修图或输入描述</p>
+      <button type="button" class="ai-auto" id="ai-auto">✦ 一键智能修图</button>
       <textarea id="ai-prompt" class="ai-input" rows="2" placeholder="例如：日系清新一点、电影感青橙色调、人像肤色更柔和…"></textarea>
       <div class="ai-chips" id="ai-chips">
         <button type="button" class="ai-chip">日系清新</button>
@@ -198,7 +199,7 @@
         <button type="button" class="ai-chip">赛博朋克</button>
         <button type="button" class="ai-chip">自动优化</button>
       </div>
-      <button type="button" class="ai-apply" id="ai-apply">✦ AI 调色</button>
+      <button type="button" class="ai-apply" id="ai-apply">按描述 AI 调色</button>
       <p class="ai-result" id="ai-result"></p>
       <details class="ai-settings">
         <summary>高级：OpenAI API（可选，视觉分析更准）</summary>
@@ -232,10 +233,11 @@
   <div class="overlay-card"><div class="spinner"></div><p>正在导出全分辨率…</p></div>
 </div>
 
-<script src="image-loader.js?v=8"></script>
-<script src="gl-engine.js?v=8"></script>
-<script src="presets.js?v=8"></script>
-<script src="ai-grade.js?v=8"></script>
-<script src="app.js?v=8"></script>
+<script src="image-loader.js?v=9"></script>
+<script src="gl-engine.js?v=9"></script>
+<script src="presets.js?v=9"></script>
+<script src="vision-agent.js?v=9"></script>
+<script src="ai-grade.js?v=9"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>

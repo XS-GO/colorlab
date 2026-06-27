@@ -24,7 +24,7 @@
 
   let engine, hasImage = false, currentPreset = null, presetStrength = 1;
   let hslChannel = 'red', curveChannel = 'master';
-  let rafId = null, draggingHistory = false;
+  let rafId = null;
   const undoStack = [], redoStack = [];
   const MAX_HIST = 40;
 
@@ -37,7 +37,7 @@
   }
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js?v=8').then(reg => reg.update()).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=9').then(reg => reg.update()).catch(() => {});
   }
 
   function setOverlay(open) {
@@ -74,6 +74,7 @@
       curveR: Array.from(engine.curveR),
       curveG: Array.from(engine.curveG),
       curveB: Array.from(engine.curveB),
+      curvePoints: curvePoints.map(p => ({ ...p })),
       currentPreset,
       presetStrength,
     });
@@ -93,6 +94,7 @@
     engine.curveG = new Uint8Array(s.curveG);
     engine.curveB = new Uint8Array(s.curveB);
     engine._curveDirty = true;
+    if (s.curvePoints) curvePoints = s.curvePoints.map(p => ({ ...p }));
     currentPreset = s.currentPreset;
     presetStrength = s.presetStrength;
     syncAllSliders();
@@ -101,14 +103,16 @@
   }
 
   function undo() {
-    if (!undoStack.length) return;
+    if (!hasImage) { toast('请先导入照片'); return; }
+    if (!undoStack.length) { toast('无可撤销'); return; }
     redoStack.push(snapshot());
     restore(undoStack.pop());
     toast('已撤销');
   }
 
   function redo() {
-    if (!redoStack.length) return;
+    if (!hasImage) { toast('请先导入照片'); return; }
+    if (!redoStack.length) { toast('无可重做'); return; }
     undoStack.push(snapshot());
     restore(redoStack.pop());
     toast('已重做');
@@ -143,10 +147,7 @@
       };
 
       slider.addEventListener('input', apply);
-      slider.addEventListener('pointerdown', () => { draggingHistory = true; });
-      slider.addEventListener('pointerup', () => {
-        if (draggingHistory) { pushHistory(); draggingHistory = false; }
-      });
+      slider.addEventListener('pointerdown', () => { pushHistory(); });
     });
   }
 
@@ -197,6 +198,7 @@
       hasImage = true;
       undoStack.length = 0;
       redoStack.length = 0;
+      pushHistory(); // 保存初始状态，撤销可回到原图
       initCurvePoints();
       syncAllSliders();
       scheduleRender();
@@ -211,9 +213,11 @@
 
   /* ── Compare ── */
   let compareTimer;
+  let compareMode = false;
   const viewport = document.getElementById('viewport');
 
   function showOriginal(show) {
+    compareMode = show;
     $canvas.style.visibility = show ? 'hidden' : 'visible';
     $canvasOrig.classList.toggle('hidden', !show);
     $compareBadge.style.display = show ? 'block' : 'none';
@@ -222,20 +226,42 @@
   function startCompare() { if (hasImage) showOriginal(true); }
   function stopCompare() { showOriginal(false); }
 
-  viewport.addEventListener('touchstart', () => { compareTimer = setTimeout(startCompare, 120); });
+  function toggleCompare() {
+    if (!hasImage) { toast('请先导入照片'); return; }
+    showOriginal(!compareMode);
+    toast(compareMode ? '显示原图' : '显示调色后');
+  }
+
+  viewport.addEventListener('touchstart', (e) => {
+    if (e.target.closest('.header-actions')) return;
+    compareTimer = setTimeout(startCompare, 120);
+  }, { passive: true });
   viewport.addEventListener('touchend', () => { clearTimeout(compareTimer); stopCompare(); });
   viewport.addEventListener('touchcancel', () => { clearTimeout(compareTimer); stopCompare(); });
-  viewport.addEventListener('mousedown', () => { compareTimer = setTimeout(startCompare, 120); });
+  viewport.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.header-actions')) return;
+    compareTimer = setTimeout(startCompare, 120);
+  });
   viewport.addEventListener('mouseup', () => { clearTimeout(compareTimer); stopCompare(); });
   viewport.addEventListener('mouseleave', () => { clearTimeout(compareTimer); stopCompare(); });
 
-  document.getElementById('btn-compare').addEventListener('touchstart', startCompare);
-  document.getElementById('btn-compare').addEventListener('touchend', stopCompare);
-  document.getElementById('btn-compare').addEventListener('mousedown', startCompare);
-  document.getElementById('btn-compare').addEventListener('mouseup', stopCompare);
+  function bindHeaderBtn(id, handler) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    let lastTap = 0;
+    el.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const now = Date.now();
+      if (now - lastTap < 350) return;
+      lastTap = now;
+      handler(e);
+    });
+  }
 
-  document.getElementById('btn-undo').onclick = undo;
-  document.getElementById('btn-redo').onclick = redo;
+  bindHeaderBtn('btn-undo', undo);
+  bindHeaderBtn('btn-redo', redo);
+  bindHeaderBtn('btn-compare', toggleCompare);
 
   /* ── Reset ── */
   document.getElementById('btn-reset').onclick = () => {
@@ -580,31 +606,38 @@
   /* ── AI Grading ── */
   const AI_USE_CLOUD_KEY = 'colorlab_use_cloud';
 
-  async function runAI() {
+  async function runAI(auto = false) {
     const $prompt = document.getElementById('ai-prompt');
     const $apply = document.getElementById('ai-apply');
+    const $autoBtn = document.getElementById('ai-auto');
     const $result = document.getElementById('ai-result');
     if (!$apply || !window.AIGrader) {
       toast('AI 模块未加载，请刷新页面');
       return;
     }
+    if (!window.VisionAgent && !auto) {
+      toast('Vision Agent 未加载，请刷新页面');
+      return;
+    }
 
     const text = ($prompt?.value || '').trim();
-    if (!text) { toast('请输入描述或点快捷标签'); return; }
+    if (!auto && !text) { toast('请输入描述或点「一键智能修图」'); return; }
     if (!hasImage) { toast('请先导入照片'); return; }
 
     $apply.disabled = true;
-    if ($result) $result.textContent = '分析中…';
-    toast('AI 分析中…');
+    if ($autoBtn) $autoBtn.disabled = true;
+    if ($result) $result.textContent = 'Agent 分析中…';
+    toast(auto ? '智能 Agent 分析中…' : 'AI 分析中…');
 
     try {
       const statsCanvas = ($canvasOrig && $canvasOrig.width > 0) ? $canvasOrig : $canvas;
       const useCloud = localStorage.getItem(AI_USE_CLOUD_KEY) === '1';
 
-      const aiResult = await AIGrader.analyze(text, statsCanvas, {
+      const aiResult = await AIGrader.analyze(auto ? '自动优化' : text, statsCanvas, {
         apiKey: AIGrader.getApiKey(),
         baseUrl: AIGrader.getBaseUrl(),
         useAPI: useCloud,
+        auto,
       });
 
       pushHistory();
@@ -625,20 +658,24 @@
 
       scheduleRender();
       if ($result) {
-        $result.textContent = aiResult.explanation + (aiResult.source === 'local' ? ' · 本地' : ' · 云端');
+        const tag = aiResult.source === 'cloud' ? ' · 云端AI' :
+          aiResult.source === 'agent' ? ' · 智能Agent' : ' · 本地';
+        $result.textContent = aiResult.explanation + tag;
       }
-      toast('AI 调色完成');
+      toast('调色完成');
     } catch (err) {
       if ($result) $result.textContent = '';
       toast('分析失败：' + (err.message || '请重试'));
       console.error('[AI]', err);
     } finally {
       $apply.disabled = false;
+      if ($autoBtn) $autoBtn.disabled = false;
     }
   }
 
   function initAI() {
     const $apply = document.getElementById('ai-apply');
+    const $autoBtn = document.getElementById('ai-auto');
     if (!$apply) {
       console.warn('[AI] ai-apply button not found');
       return;
@@ -648,6 +685,7 @@
       return;
     }
 
+    const $result = document.getElementById('ai-result');
     const $apiKey = document.getElementById('ai-api-key');
     const $apiBase = document.getElementById('ai-api-base');
     const $useCloud = document.getElementById('ai-use-cloud');
@@ -673,13 +711,22 @@
         if (!chip) return;
         const $prompt = document.getElementById('ai-prompt');
         if ($prompt) $prompt.value = chip.textContent;
+        if (chip.textContent === '自动优化' && $autoBtn) runAI(true);
+      });
+    }
+
+    if ($autoBtn) {
+      $autoBtn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        runAI(true);
       });
     }
 
     $apply.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
-      runAI();
+      runAI(false);
     });
   }
 
