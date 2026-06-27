@@ -4,6 +4,12 @@
 (function () {
   'use strict';
 
+  if (!window.PRESETS) {
+    alert('ColorLab 加载失败：presets.js 未正确加载，请刷新页面');
+    return;
+  }
+  const PRESETS = window.PRESETS;
+
   const $canvas = document.getElementById('canvas');
   const $canvasOrig = document.getElementById('canvas-original');
   const $empty = document.getElementById('empty');
@@ -31,7 +37,7 @@
   }
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js?v=7').then(reg => reg.update()).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=8').then(reg => reg.update()).catch(() => {});
   }
 
   function setOverlay(open) {
@@ -560,7 +566,7 @@
   }
 
   function applyPresetGL(key, intensity) {
-    applyPreset(engine, key, intensity);
+    window.applyPreset(engine, key, intensity);
     const adj = PRESETS[key]?.adjustments;
     if (adj?.curve) {
       curvePoints = adj.curve.map(p => ({ ...p }));
@@ -678,11 +684,18 @@
   }
 
   /* ── Boot ── */
-  bindParams();
-  buildHSLPanel();
-  buildPresets();
-  initCurvePoints();
-  initAI();
+  try {
+    bindParams();
+    buildHSLPanel();
+    buildPresets();
+    initCurvePoints();
+    initAI();
+  } catch (err) {
+    console.error('[ColorLab boot error]', err);
+    toast('加载失败: ' + err.message);
+  }
+
+  window.__colorlabReady = true;
 
   console.log('%c ColorLab Pro %c GPU Ready ', 'background:#00d4ff;color:#000;font-weight:bold', 'color:#6b7a99');
 })();

@@ -100,7 +100,7 @@ const AIGrader = (() => {
 
     // 匹配预设风格
     for (const { re, key } of PRESET_ALIASES) {
-      if (re.test(text)) { preset = key; notes.push(`风格：${PRESETS[key]?.name || key}`); break; }
+      if (re.test(text)) { preset = key; notes.push(`风格：${window.PRESETS[key]?.name || key}`); break; }
     }
 
     // 语义规则（可叠加微调）
@@ -168,7 +168,7 @@ const AIGrader = (() => {
 
     const system = `你是专业摄影调色师。根据用户描述和画面信息，输出严格 JSON（不要 markdown）：
 {"exposure":0,"contrast":0,"highlights":0,"shadows":0,"whites":0,"blacks":0,"temperature":0,"tint":0,"vibrance":0,"saturation":0,"clarity":0,"vignette":0,"grain":0,"splitShadowHue":220,"splitShadowSat":0,"splitHighlightHue":40,"splitHighlightSat":0,"splitBalance":0,"preset":null,"explanation":"一句话中文说明"}
-preset 可选值：${Object.keys(PRESETS).join(',')} 或 null
+preset 可选值：${Object.keys(window.PRESETS || {}).join(',')} 或 null
 参数范围：exposure±2，其余±100，clarity/vignette/grain 0-100，色相0-360`;
 
     const messages = [{ role: 'system', content: system }];
@@ -217,7 +217,7 @@ preset 可选值：${Object.keys(PRESETS).join(',')} 或 null
     const json = JSON.parse(raw.replace(/```json|```/g, '').trim());
     const { preset, explanation, ...params } = json;
     return {
-      preset: preset && PRESETS[preset] ? preset : null,
+      preset: preset && window.PRESETS[preset] ? preset : null,
       presetStrength: 0.9,
       adjustments: params,
       explanation: explanation || 'AI 调色完成',

@@ -550,7 +550,7 @@ const PRESETS = {
         yellow: { h:-3, s:0,  l:-5 },
         green:  { h:0,  s:-10, l:-8 },
         cyan:   { h:5,  s:25, l:5 },
-        blue:   { h:#N/A, s:20, l:-5 },
+        blue:   { h: 10, s: 20, l: -5 },
         purple: { h:5,  s:25, l:5 },
         magenta:{ h:8,  s:30, l:8 },
       }
@@ -645,3 +645,8 @@ function resetEngine(engine) {
   engine.presetIntensity = 0;
   engine.currentPresetName = null;
 }
+
+// 暴露给 app.js / ai-grade.js（const 不会跨 script 共享）
+window.PRESETS = PRESETS;
+window.applyPreset = applyPreset;
+window.resetEngine = resetEngine;
