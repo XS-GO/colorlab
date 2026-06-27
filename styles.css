@@ -271,6 +271,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .ai-result { font-size: 11px; color: var(--muted); margin-top: 8px; min-height: 16px; line-height: 1.4; }
 .ai-settings { margin-top: 10px; font-size: 11px; color: var(--muted); }
 .ai-settings summary { cursor: pointer; padding: 4px 0; }
+.ai-check { display: flex; align-items: center; gap: 6px; margin: 8px 0 4px; font-size: 11px; color: var(--text); }
+.ai-check input { width: 16px; height: 16px; }
 .ai-settings-input {
   width: 100%; margin-top: 6px; padding: 8px 10px; border-radius: 8px;
   border: 1px solid var(--border); background: rgba(0,0,0,0.3);

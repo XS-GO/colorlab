@@ -147,6 +147,13 @@ const AIGrader = (() => {
       adj = mergeAdjustments(adj, { exposure: 0.45, shadows: 28 });
     }
 
+    // 没匹配到任何规则时，仍做通用增强（避免“没反应”）
+    const hasAdj = Object.entries(adj).some(([k, v]) => k !== 'splitShadowHue' && k !== 'splitHighlightHue' && v !== 0);
+    if (!preset && !hasAdj) {
+      adj = mergeAdjustments(adj, { exposure: 0.1, contrast: 10, vibrance: 12, clarity: 10 });
+      notes.push('通用增强');
+    }
+
     const explanation = notes.length
       ? notes.join(' · ')
       : `已根据「${prompt.slice(0, 20)}」调整参数`;
@@ -155,7 +162,7 @@ const AIGrader = (() => {
   }
 
   /** OpenAI 兼容 API（可选，支持视觉） */
-  async function analyzeWithAPI(prompt, canvas, apiKey, baseUrl) {
+  async function analyzeWithAPI(prompt, canvas, apiKey, baseUrl, signal) {
     const stats = analyzeImageStats(canvas);
     const statHint = `画面分析：平均亮度${(stats.avgLum * 100).toFixed(0)}%，饱和度${(stats.avgSat * 100).toFixed(0)}%`;
 
@@ -187,6 +194,7 @@ preset 可选值：${Object.keys(PRESETS).join(',')} 或 null
     const url = (baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '') + '/chat/completions';
     const res = await fetch(url, {
       method: 'POST',
+      signal,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
@@ -221,14 +229,19 @@ preset 可选值：${Object.keys(PRESETS).join(',')} 或 null
     const stats = analyzeImageStats(canvas);
     const apiKey = options.apiKey || localStorage.getItem(STORAGE_KEY);
     const baseUrl = options.baseUrl || localStorage.getItem(BASE_URL_KEY);
+    const useAPI = options.useAPI === true && !!apiKey;
 
-    if (apiKey && options.preferAPI !== false) {
+    if (useAPI) {
       try {
-        return await analyzeWithAPI(prompt, canvas, apiKey, baseUrl);
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 12000);
+        const result = await analyzeWithAPI(prompt, canvas, apiKey, baseUrl, controller.signal);
+        clearTimeout(timer);
+        return result;
       } catch (e) {
         console.warn('AI API failed, fallback local', e);
         const local = analyzeLocal(prompt, stats);
-        local.explanation = 'API 不可用，已用本地分析 · ' + local.explanation;
+        local.explanation = '云端不可用，已本地分析 · ' + local.explanation;
         return local;
       }
     }

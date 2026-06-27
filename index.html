@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <title>ColorLab Pro</title>
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 
@@ -202,9 +202,10 @@
       <p class="ai-result" id="ai-result"></p>
       <details class="ai-settings">
         <summary>高级：OpenAI API（可选，视觉分析更准）</summary>
+        <label class="ai-check"><input type="checkbox" id="ai-use-cloud"> 使用云端 AI（需 API Key）</label>
         <input type="password" id="ai-api-key" class="ai-settings-input" placeholder="sk-… API Key" autocomplete="off">
         <input type="text" id="ai-api-base" class="ai-settings-input" placeholder="API 地址（默认 OpenAI）">
-        <button type="button" class="text-btn" id="ai-save-key">保存 Key</button>
+        <button type="button" class="text-btn" id="ai-save-key">保存设置</button>
       </details>
     </div>
   </section>
@@ -231,10 +232,10 @@
   <div class="overlay-card"><div class="spinner"></div><p>正在导出全分辨率…</p></div>
 </div>
 
-<script src="image-loader.js?v=6"></script>
-<script src="gl-engine.js?v=6"></script>
-<script src="presets.js?v=6"></script>
-<script src="ai-grade.js?v=6"></script>
-<script src="app.js?v=6"></script>
+<script src="image-loader.js?v=7"></script>
+<script src="gl-engine.js?v=7"></script>
+<script src="presets.js?v=7"></script>
+<script src="ai-grade.js?v=7"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

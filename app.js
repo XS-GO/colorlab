@@ -31,7 +31,7 @@
   }
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js?v=6').then(reg => reg.update()).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=7').then(reg => reg.update()).catch(() => {});
   }
 
   function setOverlay(open) {
@@ -572,68 +572,108 @@
   }
 
   /* ── AI Grading ── */
-  function initAI() {
+  const AI_USE_CLOUD_KEY = 'colorlab_use_cloud';
+
+  async function runAI() {
     const $prompt = document.getElementById('ai-prompt');
     const $apply = document.getElementById('ai-apply');
     const $result = document.getElementById('ai-result');
+    if (!$apply || !window.AIGrader) {
+      toast('AI 模块未加载，请刷新页面');
+      return;
+    }
+
+    const text = ($prompt?.value || '').trim();
+    if (!text) { toast('请输入描述或点快捷标签'); return; }
+    if (!hasImage) { toast('请先导入照片'); return; }
+
+    $apply.disabled = true;
+    if ($result) $result.textContent = '分析中…';
+    toast('AI 分析中…');
+
+    try {
+      const statsCanvas = ($canvasOrig && $canvasOrig.width > 0) ? $canvasOrig : $canvas;
+      const useCloud = localStorage.getItem(AI_USE_CLOUD_KEY) === '1';
+
+      const aiResult = await AIGrader.analyze(text, statsCanvas, {
+        apiKey: AIGrader.getApiKey(),
+        baseUrl: AIGrader.getBaseUrl(),
+        useAPI: useCloud,
+      });
+
+      pushHistory();
+      AIGrader.applyToEngine(engine, aiResult, {
+        applyPresetGL,
+        syncAllSliders,
+        drawCurve,
+        updateLookSelection,
+        $presetStrength,
+      });
+      currentPreset = aiResult.preset || null;
+      if (currentPreset) {
+        $presetStrength.classList.remove('hidden');
+        updateLookSelection();
+      } else {
+        $presetStrength.classList.add('hidden');
+      }
+
+      scheduleRender();
+      if ($result) {
+        $result.textContent = aiResult.explanation + (aiResult.source === 'local' ? ' · 本地' : ' · 云端');
+      }
+      toast('AI 调色完成');
+    } catch (err) {
+      if ($result) $result.textContent = '';
+      toast('分析失败：' + (err.message || '请重试'));
+      console.error('[AI]', err);
+    } finally {
+      $apply.disabled = false;
+    }
+  }
+
+  function initAI() {
+    const $apply = document.getElementById('ai-apply');
+    if (!$apply) {
+      console.warn('[AI] ai-apply button not found');
+      return;
+    }
+    if (!window.AIGrader) {
+      console.warn('[AI] AIGrader not loaded');
+      return;
+    }
+
     const $apiKey = document.getElementById('ai-api-key');
     const $apiBase = document.getElementById('ai-api-base');
+    const $useCloud = document.getElementById('ai-use-cloud');
 
-    $apiKey.value = AIGrader.getApiKey();
-    $apiBase.value = AIGrader.getBaseUrl();
+    if ($apiKey) $apiKey.value = AIGrader.getApiKey();
+    if ($apiBase) $apiBase.value = AIGrader.getBaseUrl();
+    if ($useCloud) $useCloud.checked = localStorage.getItem(AI_USE_CLOUD_KEY) === '1';
 
-    document.getElementById('ai-save-key').onclick = () => {
-      AIGrader.setApiKey($apiKey.value.trim());
-      AIGrader.setBaseUrl($apiBase.value.trim());
-      toast('API 配置已保存');
-    };
+    const saveBtn = document.getElementById('ai-save-key');
+    if (saveBtn) {
+      saveBtn.onclick = () => {
+        if ($apiKey) AIGrader.setApiKey($apiKey.value.trim());
+        if ($apiBase) AIGrader.setBaseUrl($apiBase.value.trim());
+        if ($useCloud) localStorage.setItem(AI_USE_CLOUD_KEY, $useCloud.checked ? '1' : '0');
+        toast('AI 设置已保存');
+      };
+    }
 
-    document.getElementById('ai-chips').addEventListener('click', e => {
-      const chip = e.target.closest('.ai-chip');
-      if (!chip) return;
-      $prompt.value = chip.textContent;
-    });
+    const chips = document.getElementById('ai-chips');
+    if (chips) {
+      chips.addEventListener('click', e => {
+        const chip = e.target.closest('.ai-chip');
+        if (!chip) return;
+        const $prompt = document.getElementById('ai-prompt');
+        if ($prompt) $prompt.value = chip.textContent;
+      });
+    }
 
-    $apply.addEventListener('click', async () => {
-      const text = $prompt.value.trim();
-      if (!text) { toast('请输入描述'); return; }
-      if (!hasImage) { toast('请先导入照片'); return; }
-
-      $apply.disabled = true;
-      $result.textContent = '分析中…';
-
-      try {
-        pushHistory();
-        const aiResult = await AIGrader.analyze(text, $canvas, {
-          apiKey: AIGrader.getApiKey(),
-          baseUrl: AIGrader.getBaseUrl(),
-        });
-
-        AIGrader.applyToEngine(engine, aiResult, {
-          applyPresetGL,
-          syncAllSliders,
-          drawCurve,
-          updateLookSelection,
-          $presetStrength,
-        });
-        currentPreset = aiResult.preset || null;
-        if (currentPreset) {
-          $presetStrength.classList.remove('hidden');
-          updateLookSelection();
-        } else {
-          $presetStrength.classList.add('hidden');
-        }
-
-        scheduleRender();
-        $result.textContent = aiResult.explanation + (aiResult.source === 'local' ? ' · 本地' : ' · AI');
-        toast('AI 调色完成');
-      } catch (err) {
-        $result.textContent = '';
-        toast('分析失败，请重试');
-        console.error(err);
-      } finally {
-        $apply.disabled = false;
-      }
+    $apply.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      runAI();
     });
   }
 
