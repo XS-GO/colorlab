@@ -31,7 +31,7 @@
   }
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js?v=5').then(reg => reg.update()).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=6').then(reg => reg.update()).catch(() => {});
   }
 
   function setOverlay(open) {
@@ -564,9 +564,77 @@
     const adj = PRESETS[key]?.adjustments;
     if (adj?.curve) {
       curvePoints = adj.curve.map(p => ({ ...p }));
+      engine.setCurveFromPoints(curvePoints, 'master');
     } else {
       curvePoints = DEFAULT_CURVE.map(p => ({ ...p }));
+      engine.setCurveFromPoints(curvePoints, 'master');
     }
+  }
+
+  /* ── AI Grading ── */
+  function initAI() {
+    const $prompt = document.getElementById('ai-prompt');
+    const $apply = document.getElementById('ai-apply');
+    const $result = document.getElementById('ai-result');
+    const $apiKey = document.getElementById('ai-api-key');
+    const $apiBase = document.getElementById('ai-api-base');
+
+    $apiKey.value = AIGrader.getApiKey();
+    $apiBase.value = AIGrader.getBaseUrl();
+
+    document.getElementById('ai-save-key').onclick = () => {
+      AIGrader.setApiKey($apiKey.value.trim());
+      AIGrader.setBaseUrl($apiBase.value.trim());
+      toast('API 配置已保存');
+    };
+
+    document.getElementById('ai-chips').addEventListener('click', e => {
+      const chip = e.target.closest('.ai-chip');
+      if (!chip) return;
+      $prompt.value = chip.textContent;
+    });
+
+    $apply.addEventListener('click', async () => {
+      const text = $prompt.value.trim();
+      if (!text) { toast('请输入描述'); return; }
+      if (!hasImage) { toast('请先导入照片'); return; }
+
+      $apply.disabled = true;
+      $result.textContent = '分析中…';
+
+      try {
+        pushHistory();
+        const aiResult = await AIGrader.analyze(text, $canvas, {
+          apiKey: AIGrader.getApiKey(),
+          baseUrl: AIGrader.getBaseUrl(),
+        });
+
+        AIGrader.applyToEngine(engine, aiResult, {
+          applyPresetGL,
+          syncAllSliders,
+          drawCurve,
+          updateLookSelection,
+          $presetStrength,
+        });
+        currentPreset = aiResult.preset || null;
+        if (currentPreset) {
+          $presetStrength.classList.remove('hidden');
+          updateLookSelection();
+        } else {
+          $presetStrength.classList.add('hidden');
+        }
+
+        scheduleRender();
+        $result.textContent = aiResult.explanation + (aiResult.source === 'local' ? ' · 本地' : ' · AI');
+        toast('AI 调色完成');
+      } catch (err) {
+        $result.textContent = '';
+        toast('分析失败，请重试');
+        console.error(err);
+      } finally {
+        $apply.disabled = false;
+      }
+    });
   }
 
   /* ── Boot ── */
@@ -574,6 +642,7 @@
   buildHSLPanel();
   buildPresets();
   initCurvePoints();
+  initAI();
 
   console.log('%c ColorLab Pro %c GPU Ready ', 'background:#00d4ff;color:#000;font-weight:bold', 'color:#6b7a99');
 })();

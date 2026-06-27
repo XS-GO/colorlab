@@ -240,4 +240,40 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-::-webkit-scrollbar { width: 0; height: 0; }
+.tool.ai-tool.active {
+  color: #a78bfa; border-color: rgba(167,139,250,0.4);
+  background: rgba(167,139,250,0.1);
+  box-shadow: 0 0 12px rgba(167,139,250,0.15);
+}
+
+/* AI panel */
+.ai-input {
+  width: 100%; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--border); background: rgba(0,0,0,0.35);
+  color: var(--text); font-size: 13px; resize: none; outline: none;
+  font-family: inherit; line-height: 1.4;
+}
+.ai-input:focus { border-color: #a78bfa; box-shadow: 0 0 0 2px rgba(167,139,250,0.15); }
+.ai-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.ai-chip {
+  padding: 5px 10px; border-radius: 14px; border: 1px solid var(--border);
+  background: transparent; color: var(--muted); font-size: 11px; cursor: pointer;
+}
+.ai-chip:active { color: #a78bfa; border-color: #a78bfa; }
+.ai-apply {
+  width: 100%; padding: 11px; border: none; border-radius: 10px;
+  background: linear-gradient(135deg, #6366f1, #a78bfa);
+  color: #fff; font-size: 13px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+}
+.ai-apply:active { transform: scale(0.98); }
+.ai-apply:disabled { opacity: 0.5; pointer-events: none; }
+.ai-result { font-size: 11px; color: var(--muted); margin-top: 8px; min-height: 16px; line-height: 1.4; }
+.ai-settings { margin-top: 10px; font-size: 11px; color: var(--muted); }
+.ai-settings summary { cursor: pointer; padding: 4px 0; }
+.ai-settings-input {
+  width: 100%; margin-top: 6px; padding: 8px 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: rgba(0,0,0,0.3);
+  color: var(--text); font-size: 11px; outline: none;
+}
+

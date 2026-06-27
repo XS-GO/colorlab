@@ -1,4 +1,4 @@
-const CACHE = 'colorlab-pro-v5';
+const CACHE = 'colorlab-pro-v6';
 
 self.addEventListener('install', e => {
   self.skipWaiting();

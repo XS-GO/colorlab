@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <title>ColorLab Pro</title>
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
 
@@ -56,6 +56,7 @@
     <button class="tool" data-tool="split"><span>分离</span></button>
     <button class="tool" data-tool="fx"><span>效果</span></button>
     <button class="tool" data-tool="look"><span>风格</span></button>
+    <button class="tool ai-tool" data-tool="ai"><span>AI</span></button>
   </nav>
 
   <section class="panel" id="panel">
@@ -184,6 +185,28 @@
         <input type="range" class="param-slider" value="100">
       </div>
     </div>
+
+    <!-- AI -->
+    <div class="tool-panel" data-panel="ai">
+      <p class="panel-hint">描述你想要的效果，AI 自动分析并调整参数</p>
+      <textarea id="ai-prompt" class="ai-input" rows="2" placeholder="例如：日系清新一点、电影感青橙色调、人像肤色更柔和…"></textarea>
+      <div class="ai-chips" id="ai-chips">
+        <button type="button" class="ai-chip">日系清新</button>
+        <button type="button" class="ai-chip">电影青橙</button>
+        <button type="button" class="ai-chip">人像肤色</button>
+        <button type="button" class="ai-chip">提亮暗部</button>
+        <button type="button" class="ai-chip">赛博朋克</button>
+        <button type="button" class="ai-chip">自动优化</button>
+      </div>
+      <button type="button" class="ai-apply" id="ai-apply">✦ AI 调色</button>
+      <p class="ai-result" id="ai-result"></p>
+      <details class="ai-settings">
+        <summary>高级：OpenAI API（可选，视觉分析更准）</summary>
+        <input type="password" id="ai-api-key" class="ai-settings-input" placeholder="sk-… API Key" autocomplete="off">
+        <input type="text" id="ai-api-base" class="ai-settings-input" placeholder="API 地址（默认 OpenAI）">
+        <button type="button" class="text-btn" id="ai-save-key">保存 Key</button>
+      </details>
+    </div>
   </section>
 
   <footer class="dock">
@@ -208,9 +231,10 @@
   <div class="overlay-card"><div class="spinner"></div><p>正在导出全分辨率…</p></div>
 </div>
 
-<script src="image-loader.js?v=5"></script>
-<script src="gl-engine.js?v=5"></script>
-<script src="presets.js?v=5"></script>
-<script src="app.js?v=5"></script>
+<script src="image-loader.js?v=6"></script>
+<script src="gl-engine.js?v=6"></script>
+<script src="presets.js?v=6"></script>
+<script src="ai-grade.js?v=6"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
