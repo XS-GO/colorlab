@@ -31,8 +31,15 @@
   }
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=4').then(reg => reg.update()).catch(() => {});
   }
+
+  function setOverlay(open) {
+    $overlay.classList.toggle('is-open', open);
+    $overlay.style.display = open ? 'grid' : 'none';
+    $overlay.setAttribute('aria-hidden', open ? 'false' : 'true');
+  }
+  setOverlay(false);
 
   /* ── Toast ── */
   let toastT;
@@ -246,7 +253,7 @@
     if (!hasImage) { toast('请先导入照片'); return; }
     if (exporting) return;
     exporting = true;
-    $overlay.hidden = false;
+    setOverlay(true);
     try {
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
       const off = engine.exportFullRes();
@@ -267,7 +274,7 @@
     } catch (err) {
       toast('导出失败');
     } finally {
-      $overlay.hidden = true;
+      setOverlay(false);
       exporting = false;
     }
   };
@@ -569,9 +576,6 @@
   buildHSLPanel();
   buildPresets();
   initCurvePoints();
-
-  // 确保遮罩初始隐藏（防止 CSS 覆盖 hidden 属性）
-  if ($overlay) $overlay.hidden = true;
 
   console.log('%c ColorLab Pro %c GPU Ready ', 'background:#00d4ff;color:#000;font-weight:bold', 'color:#6b7a99');
 })();

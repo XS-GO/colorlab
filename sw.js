@@ -1,18 +1,6 @@
-const CACHE = 'colorlab-pro-v3';
-const ASSETS = [
-  './',
-  './index.html',
-  './styles.css',
-  './app.js',
-  './gl-engine.js',
-  './presets.js',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-];
+const CACHE = 'colorlab-pro-v4';
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
   self.skipWaiting();
 });
 
@@ -20,13 +8,30 @@ self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
+// 网络优先：避免旧版 CSS/JS 缓存导致遮罩常显
 self.addEventListener('fetch', e => {
+  const req = e.request;
+  const url = new URL(req.url);
+  if (req.method !== 'GET') return;
+
+  const isAppShell = /\.(html|css|js)(\?|$)/.test(url.pathname) || req.mode === 'navigate';
+
+  if (isAppShell) {
+    e.respondWith(
+      fetch(req).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(req, copy));
+        return res;
+      }).catch(() => caches.match(req))
+    );
+    return;
+  }
+
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
+    caches.match(req).then(cached => cached || fetch(req))
   );
 });

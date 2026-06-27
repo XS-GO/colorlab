@@ -221,15 +221,16 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-.overlay {
+#overlay {
+  display: none !important;
   position: fixed; inset: 0; background: rgba(0,0,0,0.75);
   z-index: 200; backdrop-filter: blur(6px);
+  pointer-events: none;
 }
-.overlay:not([hidden]) {
-  display: grid; place-items: center;
-}
-.overlay[hidden] {
-  display: none !important;
+#overlay.is-open {
+  display: grid !important;
+  place-items: center;
+  pointer-events: auto;
 }
 .overlay-card { text-align: center; padding: 32px; }
 .spinner {
