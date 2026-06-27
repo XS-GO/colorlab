@@ -223,7 +223,13 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
 .overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.75);
-  display: grid; place-items: center; z-index: 200; backdrop-filter: blur(6px);
+  z-index: 200; backdrop-filter: blur(6px);
+}
+.overlay:not([hidden]) {
+  display: grid; place-items: center;
+}
+.overlay[hidden] {
+  display: none !important;
 }
 .overlay-card { text-align: center; padding: 32px; }
 .spinner {

@@ -241,24 +241,34 @@
   };
 
   /* ── Export ── */
+  let exporting = false;
   document.getElementById('btn-export').onclick = async () => {
     if (!hasImage) { toast('请先导入照片'); return; }
+    if (exporting) return;
+    exporting = true;
     $overlay.hidden = false;
-    await new Promise(r => setTimeout(r, 50));
     try {
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
       const off = engine.exportFullRes();
       if (!off) throw new Error('export failed');
-      off.toBlob(async blob => {
-        $overlay.hidden = true;
-        const file = new File([blob], 'ColorLab_' + Date.now() + '.jpg', { type: 'image/jpeg' });
-        if (navigator.share && navigator.canShare?.({ files: [file] })) {
-          try { await navigator.share({ files: [file] }); toast('已导出'); }
-          catch (err) { if (err.name !== 'AbortError') download(file); }
-        } else download(file);
-      }, 'image/jpeg', 0.95);
+      await new Promise((resolve, reject) => {
+        off.toBlob(async blob => {
+          if (!blob) { reject(new Error('blob failed')); return; }
+          try {
+            const file = new File([blob], 'ColorLab_' + Date.now() + '.jpg', { type: 'image/jpeg' });
+            if (navigator.share && navigator.canShare?.({ files: [file] })) {
+              try { await navigator.share({ files: [file] }); toast('已导出'); }
+              catch (err) { if (err.name !== 'AbortError') download(file); }
+            } else download(file);
+            resolve();
+          } catch (e) { reject(e); }
+        }, 'image/jpeg', 0.95);
+      });
     } catch (err) {
-      $overlay.hidden = true;
       toast('导出失败');
+    } finally {
+      $overlay.hidden = true;
+      exporting = false;
     }
   };
 
@@ -559,6 +569,9 @@
   buildHSLPanel();
   buildPresets();
   initCurvePoints();
+
+  // 确保遮罩初始隐藏（防止 CSS 覆盖 hidden 属性）
+  if ($overlay) $overlay.hidden = true;
 
   console.log('%c ColorLab Pro %c GPU Ready ', 'background:#00d4ff;color:#000;font-weight:bold', 'color:#6b7a99');
 })();

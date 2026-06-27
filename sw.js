@@ -1,4 +1,4 @@
-const CACHE = 'colorlab-pro-v2';
+const CACHE = 'colorlab-pro-v3';
 const ASSETS = [
   './',
   './index.html',
