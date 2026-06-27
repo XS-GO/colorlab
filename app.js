@@ -31,7 +31,7 @@
   }
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js?v=4').then(reg => reg.update()).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=5').then(reg => reg.update()).catch(() => {});
   }
 
   function setOverlay(open) {
@@ -171,36 +171,34 @@
   });
 
   /* ── Import ── */
-  document.getElementById('file-input').addEventListener('change', e => {
+  document.getElementById('file-input').addEventListener('change', async e => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => {
-        engine.loadImage(img);
-        engine.resetParams();
-        currentPreset = null;
-        $canvas.style.display = 'block';
-        $empty.style.display = 'none';
-
-        // Original for compare
-        $canvasOrig.width = engine.previewW;
-        $canvasOrig.height = engine.previewH;
-        $canvasOrig.getContext('2d').drawImage(img, 0, 0, engine.previewW, engine.previewH);
-
-        hasImage = true;
-        undoStack.length = 0;
-        redoStack.length = 0;
-        initCurvePoints();
-        syncAllSliders();
-        scheduleRender();
-        toast('已加载 · GPU 就绪');
-      };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
     e.target.value = '';
+    try {
+      toast('正在加载…');
+      const img = await loadOrientedImage(file);
+      engine.loadImage(img);
+      engine.resetParams();
+      currentPreset = null;
+      $canvas.style.display = 'block';
+      $empty.style.display = 'none';
+
+      $canvasOrig.width = engine.previewW;
+      $canvasOrig.height = engine.previewH;
+      $canvasOrig.getContext('2d').drawImage(img, 0, 0, engine.previewW, engine.previewH);
+
+      hasImage = true;
+      undoStack.length = 0;
+      redoStack.length = 0;
+      initCurvePoints();
+      syncAllSliders();
+      scheduleRender();
+      toast('已加载 · GPU 就绪');
+    } catch (err) {
+      toast('图片加载失败');
+      console.error(err);
+    }
   });
 
   document.getElementById('btn-import').onclick = () => document.getElementById('file-input').click();
