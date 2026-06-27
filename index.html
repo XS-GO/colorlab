@@ -6,216 +6,210 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ColorLab">
-  <meta name="theme-color" content="#0a0a0a">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <title>ColorLab - 专业调色</title>
-  <link rel="stylesheet" href="/styles.css">
+  <meta name="theme-color" content="#050810">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>ColorLab Pro</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<!-- 顶部导航 -->
-<header class="top-bar">
-  <span class="top-title">ColorLab</span>
-  <div class="top-actions">
-    <button class="btn-icon" id="btn-undo" title="撤销">↩</button>
-    <button class="btn-icon" id="btn-redo" title="重做">↪</button>
-    <button class="btn-icon" id="btn-compare" title="长按对比原图">ⓘ</button>
-  </div>
-</header>
+<div class="app">
+  <header class="header">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <div class="brand-text">
+        <strong>ColorLab</strong>
+        <small>PRO</small>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="btn-undo" aria-label="撤销">
+        <svg viewBox="0 0 24 24"><path d="M9 14H4V9l5 5zm0-5a7 7 0 1 1 0 14 7 7 0 0 1 0-14z" fill="currentColor"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-redo" aria-label="重做">
+        <svg viewBox="0 0 24 24"><path d="M15 14h5V9l-5 5zm0-5a7 7 0 1 0 0 14 7 7 0 0 0 0-14z" fill="currentColor"/></svg>
+      </button>
+      <button class="icon-btn accent" id="btn-compare" aria-label="对比原图">
+        <svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-6-6V4zm0 4v4l3 2" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+      </button>
+    </div>
+  </header>
 
-<!-- 预览区 -->
-<div class="preview-area" id="preview-area">
-  <canvas id="preview-canvas"></canvas>
-  <div class="placeholder" id="placeholder">
-    <div class="placeholder-icon">🖼️</div>
-    <p>选择一张照片开始调色</p>
-  </div>
-  <div class="before-label" id="before-label">原图</div>
-  <!-- 长按对比覆盖层 -->
-  <div class="compare-overlay" id="compare-overlay">
-    <canvas id="compare-canvas"></canvas>
-  </div>
+  <section class="viewport" id="viewport">
+    <div class="viewport-grid"></div>
+    <canvas id="canvas"></canvas>
+    <div class="viewport-empty" id="empty">
+      <div class="empty-ring"></div>
+      <p>导入照片 · GPU 实时调色</p>
+      <span>支持 RAW/JPEG · 60fps 预览</span>
+    </div>
+    <div class="compare-badge" id="compare-badge">ORIGINAL</div>
+    <canvas id="canvas-original" class="hidden"></canvas>
+  </section>
+
+  <nav class="tool-rail" id="tool-rail">
+    <button class="tool active" data-tool="light"><span>光效</span></button>
+    <button class="tool" data-tool="color"><span>色彩</span></button>
+    <button class="tool" data-tool="curve"><span>曲线</span></button>
+    <button class="tool" data-tool="hsl"><span>HSL</span></button>
+    <button class="tool" data-tool="split"><span>分离</span></button>
+    <button class="tool" data-tool="fx"><span>效果</span></button>
+    <button class="tool" data-tool="look"><span>风格</span></button>
+  </nav>
+
+  <section class="panel" id="panel">
+    <!-- Light -->
+    <div class="tool-panel active" data-panel="light">
+      <div class="param" data-key="exposure" data-min="-2" data-max="2" data-step="0.01" data-scale="1">
+        <label>曝光</label><output>0.00</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="contrast" data-min="-100" data-max="100" data-step="1">
+        <label>对比度</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="highlights" data-min="-100" data-max="100" data-step="1">
+        <label>高光</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="shadows" data-min="-100" data-max="100" data-step="1">
+        <label>阴影</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="whites" data-min="-100" data-max="100" data-step="1">
+        <label>白色</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="blacks" data-min="-100" data-max="100" data-step="1">
+        <label>黑色</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+    </div>
+
+    <!-- Color -->
+    <div class="tool-panel" data-panel="color">
+      <div class="param" data-key="temperature" data-min="-100" data-max="100" data-step="1">
+        <label>色温</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="tint" data-min="-100" data-max="100" data-step="1">
+        <label>色调</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="vibrance" data-min="-100" data-max="100" data-step="1">
+        <label>自然饱和</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="saturation" data-min="-100" data-max="100" data-step="1">
+        <label>饱和度</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+    </div>
+
+    <!-- Curve -->
+    <div class="tool-panel" data-panel="curve">
+      <div class="curve-tabs">
+        <button class="curve-tab active" data-ch="master">RGB</button>
+        <button class="curve-tab" data-ch="R">R</button>
+        <button class="curve-tab" data-ch="G">G</button>
+        <button class="curve-tab" data-ch="B">B</button>
+      </div>
+      <canvas id="curve-canvas" width="320" height="200"></canvas>
+      <button class="text-btn" id="curve-reset">重置曲线</button>
+    </div>
+
+    <!-- HSL -->
+    <div class="tool-panel" data-panel="hsl">
+      <div class="chip-row" id="hsl-chips">
+        <button class="chip active" data-ch="red">红</button>
+        <button class="chip" data-ch="orange">橙</button>
+        <button class="chip" data-ch="yellow">黄</button>
+        <button class="chip" data-ch="green">绿</button>
+        <button class="chip" data-ch="cyan">青</button>
+        <button class="chip" data-ch="blue">蓝</button>
+        <button class="chip" data-ch="purple">紫</button>
+        <button class="chip" data-ch="magenta">品</button>
+      </div>
+      <div id="hsl-params"></div>
+    </div>
+
+    <!-- Split tone -->
+    <div class="tool-panel" data-panel="split">
+      <p class="panel-hint">分离色调 — 阴影/高光独立着色</p>
+      <div class="param" data-key="splitShadowHue" data-min="0" data-max="360" data-step="1">
+        <label>阴影色相</label><output>220</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="splitShadowSat" data-min="0" data-max="100" data-step="1">
+        <label>阴影饱和</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="splitHighlightHue" data-min="0" data-max="360" data-step="1">
+        <label>高光色相</label><output>40</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="splitHighlightSat" data-min="0" data-max="100" data-step="1">
+        <label>高光饱和</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="splitBalance" data-min="-100" data-max="100" data-step="1">
+        <label>平衡</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+    </div>
+
+    <!-- FX -->
+    <div class="tool-panel" data-panel="fx">
+      <div class="param" data-key="clarity" data-min="0" data-max="100" data-step="1">
+        <label>清晰度</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="vignette" data-min="0" data-max="100" data-step="1">
+        <label>暗角</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+      <div class="param" data-key="grain" data-min="0" data-max="100" data-step="1">
+        <label>颗粒</label><output>0</output>
+        <input type="range" class="param-slider">
+      </div>
+    </div>
+
+    <!-- Looks / Presets -->
+    <div class="tool-panel" data-panel="look">
+      <div class="chip-row" id="preset-cats"></div>
+      <div class="look-grid" id="look-grid"></div>
+      <div class="param hidden" id="preset-strength" data-key="presetStrength" data-min="10" data-max="100" data-step="1">
+        <label>风格强度</label><output>100</output>
+        <input type="range" class="param-slider" value="100">
+      </div>
+    </div>
+  </section>
+
+  <footer class="dock">
+    <button class="dock-btn" id="btn-import">
+      <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+      导入
+    </button>
+    <button class="dock-btn" id="btn-reset">
+      <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5M20 12a8 8 0 0 1-14 5" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+      重置
+    </button>
+    <button class="dock-btn primary" id="btn-export">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+      导出
+    </button>
+  </footer>
 </div>
 
-<!-- 主控区 -->
-<div class="control-area" id="control-area">
-  <!-- 底部标签 -->
-  <div class="tabs">
-    <button class="tab active" data-tab="adjust">✏️ 调整</button>
-    <button class="tab" data-tab="presets">🎨 风格</button>
-    <button class="tab" data-tab="hsl">🌈 HSL</button>
-  </div>
-
-  <!-- 调整面板 -->
-  <div class="panel active" id="panel-adjust">
-    <div class="slider-group">
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-label">☀️ 曝光</span>
-          <span class="slider-value" id="val-exposure">0.00</span>
-        </div>
-        <input type="range" class="slider" id="slider-exposure" min="-400" max="400" value="0" step="1">
-      </div>
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-label">◑ 对比度</span>
-          <span class="slider-value" id="val-contrast">0</span>
-        </div>
-        <input type="range" class="slider" id="slider-contrast" min="-100" max="100" value="0" step="1">
-      </div>
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-label">🔆 高光</span>
-          <span class="slider-value" id="val-highlights">0</span>
-        </div>
-        <input type="range" class="slider" id="slider-highlights" min="-100" max="100" value="0" step="1">
-      </div>
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-label">🔅 阴影</span>
-          <span class="slider-value" id="val-shadows">0</span>
-        </div>
-        <input type="range" class="slider" id="slider-shadows" min="-100" max="100" value="0" step="1">
-      </div>
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-label">⬜ 白色</span>
-          <span class="slider-value" id="val-whites">0</span>
-        </div>
-        <input type="range" class="slider" id="slider-whites" min="-100" max="100" value="0" step="1">
-      </div>
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-label">⬛ 黑色</span>
-          <span class="slider-value" id="val-blacks">0</span>
-        </div>
-        <input type="range" class="slider" id="slider-blacks" min="-100" max="100" value="0" step="1">
-      </div>
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-label">🌡️ 色温</span>
-          <span class="slider-value" id="val-temperature">0</span>
-        </div>
-        <input type="range" class="slider" id="slider-temperature" min="-100" max="100" value="0" step="1">
-      </div>
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-label">🟢 色调</span>
-          <span class="slider-value" id="val-tint">0</span>
-        </div>
-        <input type="range" class="slider" id="slider-tint" min="-100" max="100" value="0" step="1">
-      </div>
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-label">💫 自然饱和度</span>
-          <span class="slider-value" id="val-vibrance">0</span>
-        </div>
-        <input type="range" class="slider" id="slider-vibrance" min="-100" max="100" value="0" step="1">
-      </div>
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-label">🎨 饱和度</span>
-          <span class="slider-value" id="val-saturation">0</span>
-        </div>
-        <input type="range" class="slider" id="slider-saturation" min="-100" max="100" value="0" step="1">
-      </div>
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-label">🔍 清晰度</span>
-          <span class="slider-value" id="val-clarity">0</span>
-        </div>
-        <input type="range" class="slider" id="slider-clarity" min="0" max="100" value="0" step="1">
-      </div>
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-label">✨ 锐化</span>
-          <span class="slider-value" id="val-sharpening">0</span>
-        </div>
-        <input type="range" class="slider" id="slider-sharpening" min="0" max="100" value="0" step="1">
-      </div>
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-label">🌚 暗角</span>
-          <span class="slider-value" id="val-vignette">0</span>
-        </div>
-        <input type="range" class="slider" id="slider-vignette" min="0" max="100" value="0" step="1">
-      </div>
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-label">🎞️ 颗粒</span>
-          <span class="slider-value" id="val-grain">0</span>
-        </div>
-        <input type="range" class="slider" id="slider-grain" min="0" max="100" value="0" step="1">
-      </div>
-    </div>
-  </div>
-
-  <!-- 风格面板 -->
-  <div class="panel" id="panel-presets">
-    <div class="preset-categories" id="preset-categories">
-      <button class="cat-btn active" data-cat="all">全部</button>
-    </div>
-    <div class="preset-grid" id="preset-grid"></div>
-    <div class="preset-intensity" id="preset-intensity" style="display:none">
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-label">强度</span>
-          <span class="slider-value" id="val-preset-intensity">100%</span>
-        </div>
-        <input type="range" class="slider" id="slider-preset-intensity" min="10" max="100" value="100" step="1">
-      </div>
-    </div>
-  </div>
-
-  <!-- HSL 面板 -->
-  <div class="panel" id="panel-hsl">
-    <div class="hsl-channels" id="hsl-channels">
-      <button class="hsl-channel active" data-ch="red">🔴 红</button>
-      <button class="hsl-channel" data-ch="orange">🟠 橙</button>
-      <button class="hsl-channel" data-ch="yellow">🟡 黄</button>
-      <button class="hsl-channel" data-ch="green">🟢 绿</button>
-      <button class="hsl-channel" data-ch="cyan">🩵 青</button>
-      <button class="hsl-channel" data-ch="blue">🔵 蓝</button>
-      <button class="hsl-channel" data-ch="purple">🟣 紫</button>
-      <button class="hsl-channel" data-ch="magenta">🩷 品</button>
-    </div>
-    <div class="hsl-sliders" id="hsl-sliders"></div>
-  </div>
-</div>
-
-<!-- 底部操作栏 -->
-<div class="bottom-bar">
-  <button class="bottom-btn" id="btn-import">
-    <span class="bottom-btn-icon">📷</span>
-    <span>导入</span>
-  </button>
-  <button class="bottom-btn" id="btn-reset">
-    <span class="bottom-btn-icon">🔄</span>
-    <span>重置</span>
-  </button>
-  <button class="bottom-btn primary" id="btn-save">
-    <span class="bottom-btn-icon">💾</span>
-    <span>保存</span>
-  </button>
-</div>
-
-<!-- 隐藏的文件输入 -->
-<input type="file" id="file-input" accept="image/*" capture="environment" style="display:none">
-
-<!-- Toast -->
+<input type="file" id="file-input" accept="image/*" hidden>
 <div class="toast" id="toast"></div>
-
-<!-- 保存进度 -->
-<div class="save-modal" id="save-modal" style="display:none">
-  <div class="save-modal-card">
-    <div class="save-spinner"></div>
-    <p>正在导出...</p>
-  </div>
+<div class="overlay" id="overlay" hidden>
+  <div class="overlay-card"><div class="spinner"></div><p>正在导出全分辨率…</p></div>
 </div>
 
-<script src="/engine.js"></script>
-<script src="/presets.js"></script>
-<script src="/app.js"></script>
+<script src="gl-engine.js"></script>
+<script src="presets.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

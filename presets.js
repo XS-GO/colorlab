@@ -600,37 +600,36 @@ function applyPreset(engine, presetKey, intensity = 1.0) {
   if (!preset) return;
 
   const adj = preset.adjustments;
+  const p = engine.params;
 
-  // 基本调整
-  engine.adj.exposure    = adj.exposure * intensity;
-  engine.adj.contrast    = adj.contrast * intensity;
-  engine.adj.highlights  = adj.highlights * intensity;
-  engine.adj.shadows     = adj.shadows * intensity;
-  engine.adj.whites      = (adj.whites || 0) * intensity;
-  engine.adj.blacks      = (adj.blacks || 0) * intensity;
-  engine.adj.temperature = adj.temperature * intensity;
-  engine.adj.tint        = adj.tint * intensity;
-  engine.adj.vibrance    = adj.vibrance * intensity;
-  engine.adj.saturation  = adj.saturation * intensity;
-  engine.adj.clarity     = adj.clarity * intensity;
-  engine.adj.sharpening  = (adj.sharpening || 0) * intensity;
-  engine.adj.grain       = (adj.grain || 0) * intensity;
-  engine.adj.vignette    = (adj.vignette || 0) * intensity;
+  p.exposure    = (adj.exposure || 0) * intensity;
+  p.contrast    = (adj.contrast || 0) * intensity;
+  p.highlights  = (adj.highlights || 0) * intensity;
+  p.shadows     = (adj.shadows || 0) * intensity;
+  p.whites      = (adj.whites || 0) * intensity;
+  p.blacks      = (adj.blacks || 0) * intensity;
+  p.temperature = (adj.temperature || 0) * intensity;
+  p.tint        = (adj.tint || 0) * intensity;
+  p.vibrance    = (adj.vibrance || 0) * intensity;
+  p.saturation  = (adj.saturation || 0) * intensity;
+  p.clarity     = (adj.clarity || 0) * intensity;
+  p.sharpening  = (adj.sharpening || 0) * intensity;
+  p.grain       = (adj.grain || 0) * intensity;
+  p.vignette    = (adj.vignette || 0) * intensity;
 
-  // 曲线
   if (adj.curve) {
-    engine.setCurveFromPoints(adj.curve);
+    engine.setCurveFromPoints(adj.curve, 'master');
+    p.curveChannel = 0;
   } else {
     engine.resetCurves();
   }
 
-  // HSL
   if (adj.hsl) {
-    for (const ch of Object.keys(engine.adj.hsl)) {
+    for (const ch of Object.keys(p.hsl)) {
       if (adj.hsl[ch]) {
-        engine.adj.hsl[ch].h = adj.hsl[ch].h * intensity;
-        engine.adj.hsl[ch].s = adj.hsl[ch].s * intensity;
-        engine.adj.hsl[ch].l = adj.hsl[ch].l * intensity;
+        p.hsl[ch].h = adj.hsl[ch].h * intensity;
+        p.hsl[ch].s = adj.hsl[ch].s * intensity;
+        p.hsl[ch].l = adj.hsl[ch].l * intensity;
       }
     }
   }
@@ -640,28 +639,8 @@ function applyPreset(engine, presetKey, intensity = 1.0) {
   engine.currentPresetName = preset.name;
 }
 
-/**
- * 重置所有引擎调整为默认值
- */
 function resetEngine(engine) {
-  engine.adj.exposure = 0;
-  engine.adj.contrast = 0;
-  engine.adj.highlights = 0;
-  engine.adj.shadows = 0;
-  engine.adj.whites = 0;
-  engine.adj.blacks = 0;
-  engine.adj.temperature = 0;
-  engine.adj.tint = 0;
-  engine.adj.vibrance = 0;
-  engine.adj.saturation = 0;
-  engine.adj.clarity = 0;
-  engine.adj.sharpening = 0;
-  engine.adj.vignette = 0;
-  engine.adj.grain = 0;
-  engine.resetCurves();
-  for (const ch of Object.keys(engine.adj.hsl)) {
-    engine.adj.hsl[ch] = { h: 0, s: 0, l: 0 };
-  }
+  engine.resetParams();
   engine.presetActive = null;
   engine.presetIntensity = 0;
   engine.currentPresetName = null;
