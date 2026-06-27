@@ -1,0 +1,531 @@
+/* ========== ColorLab Styles ========== */
+
+:root {
+  --bg: #0a0a0a;
+  --bg2: #141414;
+  --bg3: #1e1e1e;
+  --text: #fff;
+  --text2: #999;
+  --accent: #ff6b35;
+  --accent2: #ff8c42;
+  --slider-track: #333;
+  --slider-fill: #ff6b35;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ========== Top Bar ========== */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  padding-top: max(8px, var(--safe-top));
+  background: var(--bg);
+  z-index: 10;
+  min-height: 48px;
+}
+
+.top-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  background: linear-gradient(135deg, #ff6b35, #ff8c42, #ffb347);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.top-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: var(--bg2);
+  color: var(--text2);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.btn-icon:active {
+  background: var(--bg3);
+  color: var(--text);
+  transform: scale(0.95);
+}
+
+/* ========== Preview Area ========== */
+.preview-area {
+  flex: 1;
+  position: relative;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.preview-area canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.placeholder {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--text2);
+}
+
+.placeholder-icon {
+  font-size: 64px;
+  opacity: 0.4;
+}
+
+.placeholder p {
+  font-size: 14px;
+  opacity: 0.5;
+}
+
+.before-label {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  display: none;
+  pointer-events: none;
+}
+
+.compare-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.compare-overlay.show {
+  display: flex;
+}
+
+.compare-overlay canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* ========== Tabs ========== */
+.tabs {
+  display: flex;
+  background: var(--bg);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 0 4px;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  background: none;
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.tab.active {
+  color: var(--accent);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+/* ========== Control Area ========== */
+.control-area {
+  background: var(--bg);
+  max-height: 340px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel {
+  display: none;
+  overflow-y: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+
+.panel.active {
+  display: block;
+}
+
+/* ========== Sliders ========== */
+.slider-group {
+  padding: 8px 16px;
+  padding-bottom: calc(8px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.slider-item {
+  padding: 6px 0;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.slider-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #ccc;
+  white-space: nowrap;
+}
+
+.slider-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  min-width: 36px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom range slider */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--slider-track);
+  outline: none;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--accent);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.slider::-webkit-slider-thumb:active {
+  transform: scale(1.15);
+}
+
+.slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--accent);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  cursor: pointer;
+}
+
+.slider:focus {
+  background: #444;
+}
+
+/* ========== Presets Panel ========== */
+.preset-categories {
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cat-btn {
+  padding: 6px 14px;
+  border: 1px solid #333;
+  border-radius: 20px;
+  background: none;
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.cat-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.preset-card {
+  background: var(--bg2);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 14px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.preset-card:active {
+  transform: scale(0.97);
+  background: var(--bg3);
+}
+
+.preset-card.active {
+  border-color: var(--accent);
+  background: rgba(255,107,53,0.08);
+}
+
+.preset-card-icon {
+  font-size: 28px;
+}
+
+.preset-card-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.preset-card-desc {
+  font-size: 10px;
+  color: var(--text2);
+  line-height: 1.3;
+}
+
+.preset-card-cat {
+  font-size: 9px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.preset-intensity {
+  padding: 0 16px 16px;
+}
+
+/* ========== HSL Panel ========== */
+.hsl-channels {
+  display: flex;
+  gap: 4px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.hsl-channel {
+  padding: 6px 10px;
+  border: 1px solid #333;
+  border-radius: 18px;
+  background: none;
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.hsl-channel.active {
+  background: var(--bg3);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.hsl-sliders {
+  padding: 8px 16px 16px;
+}
+
+/* ========== Bottom Bar ========== */
+.bottom-bar {
+  display: flex;
+  gap: 10px;
+  padding: 8px 16px;
+  padding-bottom: calc(8px + var(--safe-bottom));
+  background: var(--bg);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.bottom-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  border: none;
+  border-radius: 14px;
+  background: var(--bg2);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.bottom-btn:active {
+  transform: scale(0.96);
+  background: var(--bg3);
+}
+
+.bottom-btn.primary {
+  background: var(--accent);
+}
+
+.bottom-btn.primary:active {
+  background: var(--accent2);
+}
+
+.bottom-btn-icon {
+  font-size: 16px;
+}
+
+/* ========== Toast ========== */
+.toast {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: var(--bg3);
+  color: var(--text);
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ========== Save Modal ========== */
+.save-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  backdrop-filter: blur(4px);
+}
+
+.save-modal-card {
+  background: var(--bg2);
+  border-radius: 20px;
+  padding: 32px 40px;
+  text-align: center;
+}
+
+.save-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--slider-track);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ========== Responsive ========== */
+@media (min-width: 768px) {
+  .preset-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  body {
+    max-width: 500px;
+    margin: 0 auto;
+    border-left: 1px solid rgba(255,255,255,0.05);
+    border-right: 1px solid rgba(255,255,255,0.05);
+  }
+}
+
+/* ========== Scrollbar ========== */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}

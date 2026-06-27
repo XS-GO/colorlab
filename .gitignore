@@ -1,0 +1,8 @@
+node_modules/
+terminals/
+*.bat
+!start.bat
+generate-icons.html
+generate_icons.py
+generate_icons.ps1
+setup.bat

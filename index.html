@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ColorLab">
+  <meta name="theme-color" content="#0a0a0a">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <title>ColorLab - 专业调色</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<header class="top-bar">
+  <span class="top-title">ColorLab</span>
+  <div class="top-actions">
+    <button class="btn-icon" id="btn-undo" title="撤销">↩</button>
+    <button class="btn-icon" id="btn-redo" title="重做">↪</button>
+    <button class="btn-icon" id="btn-compare" title="长按对比原图">ⓘ</button>
+  </div>
+</header>
+
+<!-- 预览区 -->
+<div class="preview-area" id="preview-area">
+  <canvas id="preview-canvas"></canvas>
+  <div class="placeholder" id="placeholder">
+    <div class="placeholder-icon">🖼️</div>
+    <p>选择一张照片开始调色</p>
+  </div>
+  <div class="before-label" id="before-label">原图</div>
+  <!-- 长按对比覆盖层 -->
+  <div class="compare-overlay" id="compare-overlay">
+    <canvas id="compare-canvas"></canvas>
+  </div>
+</div>
+
+<!-- 主控区 -->
+<div class="control-area" id="control-area">
+  <!-- 底部标签 -->
+  <div class="tabs">
+    <button class="tab active" data-tab="adjust">✏️ 调整</button>
+    <button class="tab" data-tab="presets">🎨 风格</button>
+    <button class="tab" data-tab="hsl">🌈 HSL</button>
+  </div>
+
+  <!-- 调整面板 -->
+  <div class="panel active" id="panel-adjust">
+    <div class="slider-group">
+      <div class="slider-item">
+        <div class="slider-header">
+          <span class="slider-label">☀️ 曝光</span>
+          <span class="slider-value" id="val-exposure">0.00</span>
+        </div>
+        <input type="range" class="slider" id="slider-exposure" min="-400" max="400" value="0" step="1">
+      </div>
+      <div class="slider-item">
+        <div class="slider-header">
+          <span class="slider-label">◑ 对比度</span>
+          <span class="slider-value" id="val-contrast">0</span>
+        </div>
+        <input type="range" class="slider" id="slider-contrast" min="-100" max="100" value="0" step="1">
+      </div>
+      <div class="slider-item">
+        <div class="slider-header">
+          <span class="slider-label">🔆 高光</span>
+          <span class="slider-value" id="val-highlights">0</span>
+        </div>
+        <input type="range" class="slider" id="slider-highlights" min="-100" max="100" value="0" step="1">
+      </div>
+      <div class="slider-item">
+        <div class="slider-header">
+          <span class="slider-label">🔅 阴影</span>
+          <span class="slider-value" id="val-shadows">0</span>
+        </div>
+        <input type="range" class="slider" id="slider-shadows" min="-100" max="100" value="0" step="1">
+      </div>
+      <div class="slider-item">
+        <div class="slider-header">
+          <span class="slider-label">⬜ 白色</span>
+          <span class="slider-value" id="val-whites">0</span>
+        </div>
+        <input type="range" class="slider" id="slider-whites" min="-100" max="100" value="0" step="1">
+      </div>
+      <div class="slider-item">
+        <div class="slider-header">
+          <span class="slider-label">⬛ 黑色</span>
+          <span class="slider-value" id="val-blacks">0</span>
+        </div>
+        <input type="range" class="slider" id="slider-blacks" min="-100" max="100" value="0" step="1">
+      </div>
+      <div class="slider-item">
+        <div class="slider-header">
+          <span class="slider-label">🌡️ 色温</span>
+          <span class="slider-value" id="val-temperature">0</span>
+        </div>
+        <input type="range" class="slider" id="slider-temperature" min="-100" max="100" value="0" step="1">
+      </div>
+      <div class="slider-item">
+        <div class="slider-header">
+          <span class="slider-label">🟢 色调</span>
+          <span class="slider-value" id="val-tint">0</span>
+        </div>
+        <input type="range" class="slider" id="slider-tint" min="-100" max="100" value="0" step="1">
+      </div>
+      <div class="slider-item">
+        <div class="slider-header">
+          <span class="slider-label">💫 自然饱和度</span>
+          <span class="slider-value" id="val-vibrance">0</span>
+        </div>
+        <input type="range" class="slider" id="slider-vibrance" min="-100" max="100" value="0" step="1">
+      </div>
+      <div class="slider-item">
+        <div class="slider-header">
+          <span class="slider-label">🎨 饱和度</span>
+          <span class="slider-value" id="val-saturation">0</span>
+        </div>
+        <input type="range" class="slider" id="slider-saturation" min="-100" max="100" value="0" step="1">
+      </div>
+      <div class="slider-item">
+        <div class="slider-header">
+          <span class="slider-label">🔍 清晰度</span>
+          <span class="slider-value" id="val-clarity">0</span>
+        </div>
+        <input type="range" class="slider" id="slider-clarity" min="0" max="100" value="0" step="1">
+      </div>
+      <div class="slider-item">
+        <div class="slider-header">
+          <span class="slider-label">✨ 锐化</span>
+          <span class="slider-value" id="val-sharpening">0</span>
+        </div>
+        <input type="range" class="slider" id="slider-sharpening" min="0" max="100" value="0" step="1">
+      </div>
+      <div class="slider-item">
+        <div class="slider-header">
+          <span class="slider-label">🌚 暗角</span>
+          <span class="slider-value" id="val-vignette">0</span>
+        </div>
+        <input type="range" class="slider" id="slider-vignette" min="0" max="100" value="0" step="1">
+      </div>
+      <div class="slider-item">
+        <div class="slider-header">
+          <span class="slider-label">🎞️ 颗粒</span>
+          <span class="slider-value" id="val-grain">0</span>
+        </div>
+        <input type="range" class="slider" id="slider-grain" min="0" max="100" value="0" step="1">
+      </div>
+    </div>
+  </div>
+
+  <!-- 风格面板 -->
+  <div class="panel" id="panel-presets">
+    <div class="preset-categories" id="preset-categories">
+      <button class="cat-btn active" data-cat="all">全部</button>
+    </div>
+    <div class="preset-grid" id="preset-grid"></div>
+    <div class="preset-intensity" id="preset-intensity" style="display:none">
+      <div class="slider-item">
+        <div class="slider-header">
+          <span class="slider-label">强度</span>
+          <span class="slider-value" id="val-preset-intensity">100%</span>
+        </div>
+        <input type="range" class="slider" id="slider-preset-intensity" min="10" max="100" value="100" step="1">
+      </div>
+    </div>
+  </div>
+
+  <!-- HSL 面板 -->
+  <div class="panel" id="panel-hsl">
+    <div class="hsl-channels" id="hsl-channels">
+      <button class="hsl-channel active" data-ch="red">🔴 红</button>
+      <button class="hsl-channel" data-ch="orange">🟠 橙</button>
+      <button class="hsl-channel" data-ch="yellow">🟡 黄</button>
+      <button class="hsl-channel" data-ch="green">🟢 绿</button>
+      <button class="hsl-channel" data-ch="cyan">🩵 青</button>
+      <button class="hsl-channel" data-ch="blue">🔵 蓝</button>
+      <button class="hsl-channel" data-ch="purple">🟣 紫</button>
+      <button class="hsl-channel" data-ch="magenta">🩷 品</button>
+    </div>
+    <div class="hsl-sliders" id="hsl-sliders"></div>
+  </div>
+</div>
+
+<!-- 底部操作栏 -->
+<div class="bottom-bar">
+  <button class="bottom-btn" id="btn-import">
+    <span class="bottom-btn-icon">📷</span>
+    <span>导入</span>
+  </button>
+  <button class="bottom-btn" id="btn-reset">
+    <span class="bottom-btn-icon">🔄</span>
+    <span>重置</span>
+  </button>
+  <button class="bottom-btn primary" id="btn-save">
+    <span class="bottom-btn-icon">💾</span>
+    <span>保存</span>
+  </button>
+</div>
+
+<!-- 隐藏的文件输入 -->
+<input type="file" id="file-input" accept="image/*" capture="environment" style="display:none">
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- 保存进度 -->
+<div class="save-modal" id="save-modal" style="display:none">
+  <div class="save-modal-card">
+    <div class="save-spinner"></div>
+    <p>正在导出...</p>
+  </div>
+</div>
+
+<script src="/engine.js"></script>
+<script src="/presets.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
